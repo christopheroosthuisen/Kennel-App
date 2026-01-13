@@ -4,6 +4,7 @@ export type ID = string;
 export type ISODate = string; // ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)
 export type URL = string;
 export type Currency = number; // Represents monetary value
+export type MoneyCents = number; // Integer representation of currency
 
 // --- Enums ---
 

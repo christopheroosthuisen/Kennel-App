@@ -15,7 +15,9 @@ import { Automations } from './components/Automations';
 import { Notifications } from './components/Notifications';
 import { Auth } from './pages/Auth';
 import { Onboarding } from './pages/Onboarding';
+import { AutomationBuilder } from './pages/AutomationBuilder'; // Import builder
 import { Dog } from 'lucide-react';
+import { ReactFlowProvider } from '@xyflow/react'; // Provider needed
 
 // Component to handle Auth state routing
 const AppContent = () => {
@@ -46,21 +48,39 @@ const AppContent = () => {
   // 3. Authenticated & Onboarded
   return (
     <HashRouter>
-      <AppLayout showAI={showAI} toggleAI={() => setShowAI(prev => !prev)}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/reservations" element={<Reservations />} />
-          <Route path="/calendar" element={<CalendarView />} />
-          <Route path="/pos" element={<POS />} />
-          <Route path="/owners-pets" element={<Profiles />} />
-          <Route path="/automations" element={<Automations />} />
-          <Route path="/report-cards" element={<ReportCards />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppLayout>
+      <Routes>
+        {/* Standalone Route for Builder (No sidebar layout) */}
+        <Route 
+          path="/automations/builder" 
+          element={
+            <ReactFlowProvider>
+              <AutomationBuilder />
+            </ReactFlowProvider>
+          } 
+        />
+
+        {/* Main Layout Routes */}
+        <Route
+          path="*"
+          element={
+            <AppLayout showAI={showAI} toggleAI={() => setShowAI(prev => !prev)}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/reservations" element={<Reservations />} />
+                <Route path="/calendar" element={<CalendarView />} />
+                <Route path="/pos" element={<POS />} />
+                <Route path="/owners-pets" element={<Profiles />} />
+                <Route path="/automations" element={<Automations />} />
+                <Route path="/report-cards" element={<ReportCards />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AppLayout>
+          }
+        />
+      </Routes>
     </HashRouter>
   );
 };

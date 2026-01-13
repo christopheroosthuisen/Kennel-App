@@ -49,6 +49,7 @@ export const NewReservationModal = ({ isOpen, onClose, ownerId }: QuickActionMod
       alert('Reservation(s) created successfully!');
       onClose();
     } catch (e) {
+      console.error(e);
       alert('Failed to create reservation.');
     }
   };

@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Phone, Mail, MapPin, Dog, Plus, AlertTriangle, Syringe, 
   LayoutGrid, List as ListIcon, MoreHorizontal, FileText, Download, Upload, Trash2,
-  Paperclip, Send, Camera, Sparkles, Image as ImageIcon, Video, Map, DollarSign, Calendar
+  Paperclip, Send, Camera, Sparkles, Image as ImageIcon, Video, Map, DollarSign, Calendar, File
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
@@ -237,6 +237,12 @@ export const Profiles = () => {
 const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const { data: owner } = useApiQuery(`owner-${id}`, () => api.getOwner(id));
   const { data: pets = [] } = useApiQuery(`pets-${id}`, () => api.getPets({ ownerId: id }));
+  
+  // Tabs Data
+  const { data: agreements = [], refetch: refetchAgreements } = useApiQuery(`agr-${id}`, () => api.listAgreements(id));
+  const { data: files = [], refetch: refetchFiles } = useApiQuery(`files-${id}`, () => api.listAttachments('Owner', id));
+  const { data: invoices = [] } = useApiQuery(`inv-${id}`, () => api.listOwnerInvoices(id));
+
   const [isVerifyingAddr, setIsVerifyingAddr] = useState(false);
   const [tab, setTab] = useState('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -255,6 +261,20 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
       alert('Verification failed. Check API configuration.'); 
     }
     setIsVerifyingAddr(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    try {
+      const file = await uploadFile(e.target.files[0]);
+      await api.createAttachment({
+        entityType: 'Owner',
+        entityId: id,
+        fileId: file.id,
+        label: 'Uploaded Doc'
+      });
+      refetchFiles();
+    } catch(e) { alert('Upload failed'); }
   };
 
   return (
@@ -304,6 +324,9 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
         tabs={[
           {id: 'overview', label: 'Overview'}, 
           {id: 'comm', label: 'Communications'},
+          {id: 'agreements', label: 'Agreements', count: agreements.length},
+          {id: 'files', label: 'Files', count: files.length},
+          {id: 'invoices', label: 'Invoices', count: invoices.length},
         ]} 
       />
       
@@ -333,6 +356,77 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
          <div className="max-w-4xl mx-auto">
             <CRMCommunicationHub ownerId={id} />
          </div>
+      )}
+
+      {tab === 'agreements' && (
+         <Card className="overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+               <h3 className="font-bold text-slate-800">Signed Agreements</h3>
+               <Button size="sm" variant="outline"><Plus size={14}/> Send New</Button>
+            </div>
+            {agreements.length > 0 ? (
+               <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
+                     <tr><th className="p-3">Name</th><th className="p-3">Signed Date</th><th className="p-3">Status</th></tr>
+                  </thead>
+                  <tbody>
+                     {agreements.map((a: any) => (
+                        <tr key={a.id} className="border-b border-slate-50">
+                           <td className="p-3 font-medium">{a.name}</td>
+                           <td className="p-3">{new Date(a.signedAt).toLocaleDateString()}</td>
+                           <td className="p-3"><Badge variant="success">{a.status}</Badge></td>
+                        </tr>
+                     ))}
+                  </tbody>
+               </table>
+            ) : (
+               <div className="p-8 text-center text-slate-400">No agreements found.</div>
+            )}
+         </Card>
+      )}
+
+      {tab === 'files' && (
+         <Card className="overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+               <h3 className="font-bold text-slate-800">Files & Attachments</h3>
+               <div className="relative">
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} />
+                  <Button size="sm" variant="outline" className="gap-2"><Upload size={14}/> Upload File</Button>
+               </div>
+            </div>
+            <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+               {files.map((f: any) => (
+                  <a href={`/api/files/${f.file.id}/download`} target="_blank" rel="noreferrer" key={f.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex flex-col items-center text-center gap-2">
+                     <FileText size={24} className="text-slate-400"/>
+                     <div className="text-sm font-medium text-slate-700 truncate w-full">{f.file.originalName}</div>
+                     <div className="text-xs text-slate-400">{new Date(f.createdAt).toLocaleDateString()}</div>
+                  </a>
+               ))}
+               {files.length === 0 && <div className="col-span-full text-center text-slate-400 p-4">No files uploaded.</div>}
+            </div>
+         </Card>
+      )}
+
+      {tab === 'invoices' && (
+         <Card className="overflow-hidden">
+            <table className="w-full text-left text-sm">
+               <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
+                  <tr><th className="p-3">Invoice #</th><th className="p-3">Date</th><th className="p-3">Total</th><th className="p-3">Balance</th><th className="p-3">Status</th></tr>
+               </thead>
+               <tbody>
+                  {invoices.map((inv: any) => (
+                     <tr key={inv.id} className="border-b border-slate-50">
+                        <td className="p-3 font-mono">#{inv.id.slice(-6)}</td>
+                        <td className="p-3">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                        <td className="p-3">${(inv.total / 100).toFixed(2)}</td>
+                        <td className="p-3">${(inv.balanceDue / 100).toFixed(2)}</td>
+                        <td className="p-3"><Badge variant={inv.status === 'Paid' ? 'success' : 'warning'}>{inv.status}</Badge></td>
+                     </tr>
+                  ))}
+                  {invoices.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-slate-400">No invoices found.</td></tr>}
+               </tbody>
+            </table>
+         </Card>
       )}
 
       {isEditOpen && <EditOwnerModal isOpen={true} onClose={() => setIsEditOpen(false)} id={owner.id} />}

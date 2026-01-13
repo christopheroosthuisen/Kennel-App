@@ -29,7 +29,10 @@ export const CRMCommunicationHub = ({ ownerId }: { ownerId: string }) => {
   
   // Helper to fetch all messages from all threads (simple implementation)
   const loadAllMessages = async () => {
-    if (!threads.length) return;
+    if (!threads.length) {
+      setAllMessages([]);
+      return;
+    }
     const promises = threads.map(t => api.listMessages(t.id));
     const results = await Promise.all(promises);
     const msgs = results.flatMap(r => r.data);
@@ -102,7 +105,7 @@ export const CRMCommunicationHub = ({ ownerId }: { ownerId: string }) => {
     setIsTimerRunning(false);
     if (timerRef.current) clearInterval(timerRef.current);
     
-    // Optimistic or wait for stream
+    // Optimistic refresh
     loadAllMessages();
   };
 
