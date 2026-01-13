@@ -3,15 +3,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Phone, Mail, MapPin, Dog, Plus, AlertTriangle, Syringe, 
   LayoutGrid, List as ListIcon, MoreHorizontal, FileText, Download, Upload, Trash2,
-  Paperclip, Send, Camera, Sparkles, Image as ImageIcon, Video, Map
+  Paperclip, Send, Camera, Sparkles, Image as ImageIcon, Video, Map, DollarSign, Calendar
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
 import { EditOwnerModal, EditPetModal } from './EditModals';
+import { NewReservationModal, SendEstimateModal } from './QuickActionModals';
 import { api } from '../api/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { uploadFile, fileToBase64 } from '../utils/files';
 import { chatWithGemini, generatePetAvatar, editImage, animatePetPhoto, analyzeDocument } from '../services/ai';
+import { CRMCommunicationHub } from './CRMCommunicationHub';
 
 // ... (Keep existing useDebounce hook) ...
 function useDebounce(value: string, delay: number) {
@@ -238,6 +240,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const [isVerifyingAddr, setIsVerifyingAddr] = useState(false);
   const [tab, setTab] = useState('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [activeActionModal, setActiveActionModal] = useState<'reservation' | 'estimate' | null>(null);
 
   if (!owner) return <div>Loading...</div>;
 
@@ -281,6 +284,17 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                  </div>
               </div>
            </div>
+           <div className="text-right space-y-2">
+              <div className="text-sm text-slate-500">Account Balance</div>
+              <div className={cn("text-3xl font-bold", owner.balance > 0 ? "text-red-600" : "text-green-600")}>
+                 ${(owner.balance / 100).toFixed(2)}
+              </div>
+              <div className="flex gap-2 justify-end">
+                 <Button size="sm" variant="outline" onClick={() => setIsEditOpen(true)}>Edit Profile</Button>
+                 <Button size="sm" variant="outline" className="gap-2" onClick={() => setActiveActionModal('estimate')}><DollarSign size={14}/> Send Estimate</Button>
+                 <Button size="sm" className="gap-2" onClick={() => setActiveActionModal('reservation')}><Calendar size={14}/> New Reservation</Button>
+              </div>
+           </div>
         </div>
       </Card>
 
@@ -289,11 +303,54 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
         onChange={setTab} 
         tabs={[
           {id: 'overview', label: 'Overview'}, 
+          {id: 'comm', label: 'Communications'},
         ]} 
       />
       
       {tab === 'overview' && (
-         <div className="p-4">Overview Content (Details omitted for brevity)</div>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-6">
+               <Card className="p-4 space-y-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2"><Dog size={18}/> Household Pets</h3>
+                  {pets.map((pet: any) => (
+                    <div key={pet.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group transition-colors border border-transparent hover:border-slate-100">
+                      <img src={pet.photoUrl || `https://ui-avatars.com/api/?name=${pet.name}&background=random`} className="h-10 w-10 rounded-full object-cover" alt="" />
+                      <div>
+                         <div className="font-semibold text-slate-800 group-hover:text-primary-600">{pet.name}</div>
+                         <div className="text-xs text-slate-500">{pet.breed}</div>
+                      </div>
+                    </div>
+                  ))}
+               </Card>
+            </div>
+            <div className="md:col-span-2">
+               <CRMCommunicationHub ownerId={id} />
+            </div>
+         </div>
+      )}
+
+      {tab === 'comm' && (
+         <div className="max-w-4xl mx-auto">
+            <CRMCommunicationHub ownerId={id} />
+         </div>
+      )}
+
+      {isEditOpen && <EditOwnerModal isOpen={true} onClose={() => setIsEditOpen(false)} id={owner.id} />}
+      
+      {activeActionModal === 'reservation' && (
+        <NewReservationModal 
+          isOpen={true} 
+          onClose={() => setActiveActionModal(null)} 
+          ownerId={id} 
+        />
+      )}
+      
+      {activeActionModal === 'estimate' && (
+        <SendEstimateModal 
+          isOpen={true} 
+          onClose={() => setActiveActionModal(null)} 
+          ownerId={id} 
+        />
       )}
     </div>
   );

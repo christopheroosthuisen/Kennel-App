@@ -70,6 +70,13 @@ export interface FileAttachment {
   url: string;
 }
 
+export interface GroomingPreferences {
+  bladeSetting: string;
+  shampoo: string;
+  frequency: string;
+  handlingNotes: string;
+}
+
 export interface Pet {
   id: string;
   ownerId: string;
@@ -89,6 +96,7 @@ export interface Pet {
   vet: string;
   feedingInstructions: string;
   behaviorNotes?: string;
+  grooming?: GroomingPreferences;
 }
 
 export interface Vaccine {

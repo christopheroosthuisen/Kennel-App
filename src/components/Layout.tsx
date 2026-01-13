@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, Bell, Search, ShoppingCart, HelpCircle, User, LayoutDashboard, 
@@ -11,6 +12,7 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useEventStream } from '../hooks/useEventStream';
 import { chatWithGemini, connectLiveSession } from '../services/ai';
 import { LiveServerMessage } from '@google/genai';
+import { PetDetailDrawer } from './PetDetailDrawer';
 
 const NavItem = ({ icon: Icon, label, path, collapsed, active }: { icon: any, label: string, path: string, collapsed: boolean, active: boolean }) => (
   <Link 
@@ -97,6 +99,11 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
   });
 
   const unreadCount = notifications.length;
+
+  // Pet Drawer State
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const { data: pets = [], refetch: refetchPets } = useApiQuery('layout-pets', () => api.getPets());
+  const selectedPet = pets.find(p => p.id === selectedPetId);
 
   useEffect(() => {
     if (showAI && scrollRef.current) {
@@ -264,6 +271,33 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
               />
             </React.Fragment>
           ))}
+
+          {/* Recent Pets Section (Trigger for Drawer) */}
+          {!collapsed && (
+            <div className="mt-8">
+              <div className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Checked In Pets</div>
+              <div className="space-y-1">
+                {pets.slice(0, 4).map(pet => (
+                  <button
+                    key={pet.id}
+                    onClick={() => setSelectedPetId(pet.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-slate-800 text-left group"
+                  >
+                    <div className="relative">
+                      <div className="h-8 w-8 rounded-full bg-slate-700 overflow-hidden ring-2 ring-transparent group-hover:ring-primary-500 transition-all">
+                        <img src={pet.photoUrl} alt={pet.name} className="h-full w-full object-cover" />
+                      </div>
+                      {(pet.tags || []).length > 0 && <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-slate-900" />}
+                    </div>
+                    <div className="overflow-hidden">
+                      <div className="text-sm font-medium text-slate-300 group-hover:text-white truncate">{pet.name}</div>
+                      <div className="text-[10px] text-slate-500 truncate">{pet.breed}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-2 border-t border-slate-800">
@@ -277,7 +311,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
         <header 
           className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10"
@@ -356,6 +390,14 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
             {children}
           </div>
         </main>
+
+        {/* Pet Detail Drawer */}
+        <PetDetailDrawer 
+          isOpen={!!selectedPetId} 
+          onClose={() => setSelectedPetId(null)} 
+          pet={selectedPet}
+          onUpdate={refetchPets}
+        />
       </div>
 
       {/* AI Assistant Panel (Right Side) */}
