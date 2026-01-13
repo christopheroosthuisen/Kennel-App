@@ -1,0 +1,7 @@
+{
+  "name": "Partners Dogs Kennel Ops",
+  "description": "A high-density, AI-enhanced operations dashboard for kennel and daycare management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
