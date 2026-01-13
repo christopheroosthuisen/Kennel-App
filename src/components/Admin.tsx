@@ -201,7 +201,7 @@ const UserAccountsView = () => {
                         </td>
                         <td className="px-6 py-4"><Badge variant="outline">{user.role}</Badge></td>
                         <td className="px-6 py-4 text-sm text-slate-500">{user.email}</td>
-                        <td className="px-6 py-4 text-sm text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-sm text-slate-500">{new Date((user as any).createdAt || Date.now()).toLocaleDateString()}</td>
                         <td className="px-6 py-4 text-right">
                            <Button variant="ghost" size="sm">Edit</Button>
                         </td>

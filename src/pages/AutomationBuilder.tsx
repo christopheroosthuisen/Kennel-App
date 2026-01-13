@@ -10,10 +10,8 @@ import { Save, ArrowLeft, Plus, Zap, PlayCircle, GitBranch, Settings, Clock, Che
 import { Button, cn } from '../components/Common';
 import { TriggerNode, ActionNode, LogicNode } from '../components/automations/CustomNodes';
 import { NodeConfigPanel } from '../components/automations/NodeConfigPanel';
-import { WorkflowNode, WorkflowData } from '../../types/automation';
+import { WorkflowNode } from '../../types/automation';
 import { api } from '../api/api';
-
-import '@xyflow/react/dist/style.css';
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -103,15 +101,13 @@ export const AutomationBuilder = () => {
   };
 
   const handleSaveWorkflow = async () => {
-    // Flatten edges and nodes to JSON string for the current simple API
     const flow = rfInstance.toObject();
     const triggerNode = nodes.find(n => n.type === 'trigger');
     
     await api.createWorkflow({
       name: 'New Automation ' + new Date().toLocaleTimeString(),
       triggerType: (triggerNode?.data.triggerType as string) || 'MANUAL',
-      steps: flow.nodes as any, // Storing raw nodes for builder restoration
-      // Note: In a real app we'd augment the API to store edges separately or graph structure
+      steps: flow.nodes as any,
       isEnabled: true
     });
     

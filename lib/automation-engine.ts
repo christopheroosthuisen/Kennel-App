@@ -1,6 +1,9 @@
 
 import { WorkflowDefinition, TriggerType, WorkflowContext, Enrollment } from '../types/automation';
-import { api } from '../src/api/api';
+// Fix import path: ../src/api/api if using strict node resolution or ../api/api if bundling relative to src
+// Based on typical structure where this file is in /lib/automation-engine.ts at root
+// And API is at /src/api/api.ts
+import { api } from '../src/api/api'; 
 
 // --- MOCK STORAGE FOR DEMO ---
 let activeEnrollments: Enrollment[] = [];

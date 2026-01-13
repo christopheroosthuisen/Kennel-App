@@ -53,7 +53,7 @@ export const POS = () => {
     o.phone.includes(customerSearch)
   );
 
-  const categories = ['All', ...Array.from(new Set(catalog.map(c => c.category || c.type)))];
+  const categories = ['All', ...Array.from(new Set((catalog as any[]).map(c => c.category || c.type)))] as string[];
 
   // Modified Payment Completion
   const handlePaymentComplete = async (method: string) => {

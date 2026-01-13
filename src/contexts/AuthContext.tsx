@@ -1,88 +1,93 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../api/api';
+import React, { createContext, useContext, useState, useEffect, ReactNode, PropsWithChildren } from 'react';
+import { PlatinumEngine } from '../lib/platinum-engine';
 
-interface UIUser {
+// Define User shape to match PlatinumEngine + App requirements
+export interface User {
   id: string;
-  email: string;
   name: string;
-  role: 'Admin' | 'Manager' | 'Staff';
-  orgId?: string;
-  onboarded: boolean;
-  avatarUrl?: string;
+  email: string;
+  role: string;
+  avatar: string;
+  token: string;
+  onboarded?: boolean; // Required by App.tsx logic
 }
 
 interface AuthContextType {
-  user: UIUser | null;
-  org: any | null; 
-  login: (email: string, password?: string) => Promise<void>;
-  signup: (email: string, name: string) => Promise<void>;
-  logout: () => void;
-  updateOnboarding: (orgData: any) => Promise<void>;
+  user: User | null;
+  org: any | null; // Mocked for App compatibility
   isLoading: boolean;
+  login: (email: string, pass: string) => Promise<void>;
+  logout: () => void;
   error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UIUser | null>(null);
-  const [org, setOrg] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const AuthProvider = ({ children }: PropsWithChildren) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize session (Simple local storage mock)
+  // 1. Restore Session on Mount
   useEffect(() => {
-    const initAuth = async () => {
-      const stored = localStorage.getItem('mock_user_session');
-      if (stored) {
-        setUser(JSON.parse(stored));
+    const restoreSession = async () => {
+      const storedUser = localStorage.getItem('platinum_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (e) {
+          console.error("Failed to parse session", e);
+          localStorage.removeItem('platinum_user');
+        }
       }
       setIsLoading(false);
     };
-    initAuth();
+    restoreSession();
   }, []);
 
-  const login = async (email: string, password?: string) => {
+  // 2. Login Logic
+  const login = async (email: string, pass: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Use the Mock API
-      const response = await api.login(email);
-      const userData = { ...response.user, onboarded: true } as UIUser;
+      const result = await PlatinumEngine.login(email, pass);
       
-      setUser(userData);
-      localStorage.setItem('mock_user_session', JSON.stringify(userData));
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+      if (result.success && result.user) {
+        // Inject 'onboarded: true' to ensure the user bypasses the onboarding screen
+        const sessionUser = { ...result.user, onboarded: true };
+        
+        setUser(sessionUser);
+        localStorage.setItem('platinum_user', JSON.stringify(sessionUser));
+      } else {
+        setError(result.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('An unexpected network error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signup = async (email: string, name: string) => {
-    // Mock Signup
-    const newUser = { id: `u-${Date.now()}`, email, name, role: 'Admin' as const, onboarded: false };
-    setUser(newUser);
-    localStorage.setItem('mock_user_session', JSON.stringify(newUser));
-  };
-
+  // 3. Logout Logic
   const logout = () => {
-    localStorage.removeItem('mock_user_session');
     setUser(null);
-    setOrg(null);
+    localStorage.removeItem('platinum_user');
   };
 
-  const updateOnboarding = async (orgData: any) => {
-    if (user) {
-        const updated = { ...user, onboarded: true };
-        setUser(updated);
-        localStorage.setItem('mock_user_session', JSON.stringify(updated));
-    }
-  };
+  // Mock Org object to satisfy App.tsx requirements without a full Org fetch
+  const mockOrg = user ? { id: 'org-1', name: 'Platinum Kennel' } : null;
 
   return (
-    <AuthContext.Provider value={{ user, org, login, signup, logout, updateOnboarding, isLoading, error }}>
+    <AuthContext.Provider value={{
+      user,
+      org: mockOrg,
+      isLoading,
+      login,
+      logout,
+      error
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -90,6 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
 };

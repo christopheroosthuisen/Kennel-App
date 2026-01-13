@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/Layout';
+
+// Pages
 import { Dashboard } from './components/Dashboard';
 import { Reservations } from './components/Reservations';
 import { CalendarView } from './components/Calendar';
@@ -15,7 +17,7 @@ import { Automations } from './components/Automations';
 import { Notifications } from './components/Notifications';
 import { Auth } from './pages/Auth';
 import { Onboarding } from './pages/Onboarding';
-import { AutomationBuilder } from './pages/AutomationBuilder';
+import { AutomationBuilder } from './pages/AutomationBuilder'; 
 import { Dog } from 'lucide-react';
 import { ReactFlowProvider } from '@xyflow/react'; 
 
@@ -41,7 +43,7 @@ const AppContent = () => {
   }
 
   // 2. Logged In, but No Organization (Needs Onboarding)
-  if (!user.onboarded) {
+  if (!user.onboarded || !org) {
     return <Onboarding />;
   }
 
