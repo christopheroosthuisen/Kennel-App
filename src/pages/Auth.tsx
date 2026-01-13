@@ -5,19 +5,17 @@ import { Button, Card, Input, Label, cn } from '../components/Common';
 import { Dog, ShieldCheck, Zap, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Auth = () => {
-  const [mode, setMode] = useState<'login'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'login') {
-      try {
-        await login(email, password); 
-      } catch (e) {
-        // Error handled in context
-      }
+    try {
+      await login(email, password); 
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -94,7 +92,7 @@ export const Auth = () => {
                     <InfoIcon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                     <div className="text-sm text-blue-800 leading-snug">
                       <span className="font-bold block mb-1">Sandbox Mode Active</span>
-                      Use <span className="font-mono bg-blue-100 px-1 rounded text-blue-700">admin@local</span> / <span className="font-mono bg-blue-100 px-1 rounded text-blue-700">admin123</span> to explore.
+                      Use <span className="font-mono bg-blue-100 px-1 rounded text-blue-700">admin@local</span> / <span className="font-mono bg-blue-100 px-1 rounded text-blue-700">password</span> to explore.
                     </div>
                  </div>
               </div>

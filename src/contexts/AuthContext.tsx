@@ -1,11 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserAccount } from '../../shared/domain'; // Use shared domain type
-import { apiFetch, setToken, clearToken, getToken } from '../auth/auth';
+import { api } from '../api/api';
 
-// Define a type compatible with the frontend UI expectation if necessary, 
-// or simply assume Shared.UserAccount is sufficient. 
-// For now, mapping response user to existing UI User type.
 interface UIUser {
   id: string;
   email: string;
@@ -18,8 +14,8 @@ interface UIUser {
 
 interface AuthContextType {
   user: UIUser | null;
-  org: any | null; // Placeholder for now until org API is ready
-  login: (email: string) => Promise<void>;
+  org: any | null; 
+  login: (email: string, password?: string) => Promise<void>;
   signup: (email: string, name: string) => Promise<void>;
   logout: () => void;
   updateOnboarding: (orgData: any) => Promise<void>;
@@ -35,63 +31,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize session
+  // Initialize session (Simple local storage mock)
   useEffect(() => {
     const initAuth = async () => {
-      const token = getToken();
-      if (token) {
-        try {
-          const { user } = await apiFetch<{ user: any }>('/api/auth/me');
-          setUser({ ...user, onboarded: true }); // Assume onboarded for seeded users for now
-        } catch (err) {
-          console.error("Session restore failed", err);
-          clearToken();
-        }
+      const stored = localStorage.getItem('mock_user_session');
+      if (stored) {
+        setUser(JSON.parse(stored));
       }
       setIsLoading(false);
     };
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => { // Updated signature to accept password
+  const login = async (email: string, password?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiFetch<{ token: string, user: any }>('/api/auth/login', {
-        method: 'POST',
-        data: { email, password }
-      });
+      // Use the Mock API
+      const response = await api.login(email);
+      const userData = { ...response.user, onboarded: true } as UIUser;
       
-      setToken(response.token);
-      setUser({ ...response.user, onboarded: true });
-      // In a real flow, fetch org details here if orgId exists
+      setUser(userData);
+      localStorage.setItem('mock_user_session', JSON.stringify(userData));
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
   };
 
   const signup = async (email: string, name: string) => {
-    setError("Self-signup is disabled in local mode. Please use admin@local / admin123");
+    // Mock Signup
+    const newUser = { id: `u-${Date.now()}`, email, name, role: 'Admin' as const, onboarded: false };
+    setUser(newUser);
+    localStorage.setItem('mock_user_session', JSON.stringify(newUser));
   };
 
   const logout = () => {
-    // Fire and forget logout on server
-    apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    clearToken();
+    localStorage.removeItem('mock_user_session');
     setUser(null);
     setOrg(null);
   };
 
   const updateOnboarding = async (orgData: any) => {
-    // Placeholder for future implementation
-    console.log("Onboarding update:", orgData);
+    if (user) {
+        const updated = { ...user, onboarded: true };
+        setUser(updated);
+        localStorage.setItem('mock_user_session', JSON.stringify(updated));
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, org, login: login as any, signup, logout, updateOnboarding, isLoading, error }}>
+    <AuthContext.Provider value={{ user, org, login, signup, logout, updateOnboarding, isLoading, error }}>
       {children}
     </AuthContext.Provider>
   );

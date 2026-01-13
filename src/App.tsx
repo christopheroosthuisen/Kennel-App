@@ -41,7 +41,7 @@ const AppContent = () => {
   }
 
   // 2. Logged In, but No Organization (Needs Onboarding)
-  if (!user.onboarded || !org) {
+  if (!user.onboarded) {
     return <Onboarding />;
   }
 
