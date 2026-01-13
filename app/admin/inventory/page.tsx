@@ -2,10 +2,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { usePosStore } from '@/store/pos-store';
-import { Card, Button, Input, Badge, cn } from '@/components/Common';
+import { usePosStore } from '../../../store/pos-store';
+import { Card, Button, Input, Badge, cn } from '../../../components/Common';
 import { Search, Printer, AlertTriangle, Edit2, Check, Download } from 'lucide-react';
-import { formatMoney } from '@/shared/utils';
+import { formatMoney } from '../../../shared/utils';
 
 export default function InventoryPage() {
   const { products } = usePosStore(); // In real app, fetch via API

@@ -1,25 +1,19 @@
 
 "use client";
 
-import React, { useState, useTransition } from "react";
-import { useTheme } from "@/components/providers/theme-provider";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React, { useState } from "react";
+import { useTheme } from "../../../components/providers/theme-provider";
+import { Button, Input, Label, Slider, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator, Select } from "../../../components/Common";
 import { Loader2, Save, LayoutDashboard, Calendar, Users, Settings } from "lucide-react";
-import { PRESETS, DEFAULT_THEME } from "@/lib/theme-utils";
-import { updateBrandSettings } from "@/actions/crm-interactions";
-import { ThemePreset } from "@/types/theme";
+import { PRESETS, DEFAULT_THEME } from "../../../lib/theme-utils";
+import { updateBrandSettings } from "../../../actions/crm-interactions";
+import { ThemePreset } from "../../../types/theme";
 
 const FONT_OPTIONS = ["Inter", "Roboto", "Open Sans", "Lato", "Playfair Display", "Montserrat"];
 
 export default function BrandSettingsPage() {
   const { settings, updateSettings, resetTheme } = useTheme();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   const handleColorChange = (key: keyof typeof settings.colors, value: string) => {
     updateSettings({ colors: { ...settings.colors, [key]: value } });
@@ -30,11 +24,11 @@ export default function BrandSettingsPage() {
     if (p) updateSettings(p);
   };
 
-  const handleSave = () => {
-    startTransition(async () => {
-      await updateBrandSettings(settings);
-      // Optional: Add toast notification here
-    });
+  const handleSave = async () => {
+    setIsPending(true);
+    await updateBrandSettings(settings);
+    setIsPending(false);
+    // Optional: Add toast notification here
   };
 
   return (
@@ -66,16 +60,15 @@ export default function BrandSettingsPage() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Palette</h3>
-              <Select onValueChange={(val) => handlePresetChange(val as ThemePreset)}>
-                <SelectTrigger className="w-[120px] h-8 text-xs">
-                  <SelectValue placeholder="Presets" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Platinum">Platinum</SelectItem>
-                  <SelectItem value="Oceanic">Oceanic</SelectItem>
-                  <SelectItem value="Royal">Royal</SelectItem>
-                  <SelectItem value="Midnight">Midnight</SelectItem>
-                </SelectContent>
+              <Select 
+                onChange={(e) => handlePresetChange(e.target.value as ThemePreset)}
+                className="w-[120px] h-8 text-xs"
+              >
+                <option value="" disabled selected>Presets</option>
+                <option value="Platinum">Platinum</option>
+                <option value="Oceanic">Oceanic</option>
+                <option value="Royal">Royal</option>
+                <option value="Midnight">Midnight</option>
               </Select>
             </div>
             
@@ -113,24 +106,18 @@ export default function BrandSettingsPage() {
                 <Label>Heading Font</Label>
                 <Select 
                   value={settings.typography.headingFont} 
-                  onValueChange={(val) => updateSettings({ typography: { ...settings.typography, headingFont: val } })}
+                  onChange={(e) => updateSettings({ typography: { ...settings.typography, headingFont: e.target.value } })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FONT_OPTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                  </SelectContent>
+                  {FONT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Body Font</Label>
                 <Select 
                   value={settings.typography.bodyFont} 
-                  onValueChange={(val) => updateSettings({ typography: { ...settings.typography, bodyFont: val } })}
+                  onChange={(e) => updateSettings({ typography: { ...settings.typography, bodyFont: e.target.value } })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FONT_OPTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                  </SelectContent>
+                  {FONT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
                 </Select>
               </div>
             </div>
@@ -149,7 +136,7 @@ export default function BrandSettingsPage() {
                 min={0} 
                 max={1.5} 
                 step={0.1} 
-                value={[settings.radius]} 
+                value={settings.radius} 
                 onValueChange={(vals) => updateSettings({ radius: vals[0] })} 
               />
             </div>

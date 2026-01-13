@@ -1,6 +1,6 @@
 
 import { apiFetch } from '../auth/auth';
-import { Owner, Pet, KennelUnit, CatalogItem, Reservation, ReservationSegment, ReservationLineItem, Estimate, Invoice, Payment, EstimateLineItem, InvoiceLineItem, Agreement, FileObject, Attachment, ReportCard, ReportCardMedia, Notification, NotificationComment, MessageThread, Message, AuditLog, UserAccount, Workflow, WorkflowRun } from '../../shared/domain';
+import { Owner, Pet, KennelUnit, CatalogItem, Reservation, ReservationSegment, ReservationLineItem, Estimate, Invoice, Payment, EstimateLineItem, InvoiceLineItem, Agreement, FileObject, Attachment, ReportCard, ReportCardMedia, Notification, NotificationComment, MessageThread, Message, AuditLog, UserAccount, Workflow, WorkflowRun, MembershipDefinition, PackageDefinition, UserLedger } from '../../shared/domain';
 
 // Availability Response
 interface AvailabilityResponse {
@@ -87,6 +87,11 @@ export const api = {
   
   posCheckout: (data: { ownerId?: string, items: {catalogItemId: string, quantity: number}[], payment?: {method: string, amountCents: number, reference?: string} }) =>
     apiFetch<{ data: Invoice }>('/api/pos/checkout', { method: 'POST', data }),
+
+  // Loyalty
+  getMembershipDefinitions: () => apiFetch<{ data: MembershipDefinition[] }>('/api/memberships/definitions'),
+  getPackageDefinitions: () => apiFetch<{ data: PackageDefinition[] }>('/api/packages/definitions'),
+  getOwnerLedger: (ownerId: string) => apiFetch<{ data: UserLedger }>(`/api/owners/${ownerId}/ledger`),
 
   // Files & Attachments
   createAttachment: (data: { entityType: string, entityId: string, fileId: string, label?: string }) =>

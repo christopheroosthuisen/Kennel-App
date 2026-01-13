@@ -1,9 +1,6 @@
 
-"use server";
-
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { BrandSettings } from "@/types/theme";
+import { BrandSettings } from "../types/theme";
 
 // --- Types ---
 const ActivitySchema = z.object({
@@ -14,7 +11,7 @@ const ActivitySchema = z.object({
 
 export type ActivityLog = z.infer<typeof ActivitySchema>;
 
-// --- Server Actions ---
+// --- Actions (Client-side mock for SPA) ---
 
 export async function logActivity(data: ActivityLog) {
   // 1. Validate Input
@@ -37,9 +34,6 @@ export async function logActivity(data: ActivityLog) {
   await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate latency
   
   console.log(`[DB] Logged activity for ${data.ownerId}:`, { ...data, sentiment });
-
-  // 4. Revalidate
-  revalidatePath(`/crm/owners/${data.ownerId}`);
   
   return { success: true, sentiment };
 }

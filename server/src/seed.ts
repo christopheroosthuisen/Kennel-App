@@ -2,7 +2,7 @@
 import { withDb } from './db';
 import { DEFAULT_ORG_ID, DEFAULT_LOCATION_ID } from '../../shared/domain';
 import { generateId, nowISO } from '../../shared/utils';
-import { KennelUnit, CatalogItem } from '../../shared/domain';
+import { KennelUnit, CatalogItem, MembershipDefinition, PackageDefinition } from '../../shared/domain';
 import { hashPassword } from './auth';
 
 export async function seedIfNeeded() {
@@ -73,6 +73,46 @@ export async function seedIfNeeded() {
         tags: []
       });
     });
+
+    // Seed Memberships
+    const goldMember: MembershipDefinition = {
+      id: generateId('mem'),
+      orgId: DEFAULT_ORG_ID,
+      locationId: DEFAULT_LOCATION_ID,
+      name: 'Gold Member',
+      price: 4900,
+      billingFrequency: 'MONTHLY',
+      requiresSignature: true,
+      colorHex: '#eab308',
+      isActive: true,
+      createdAt: nowISO(),
+      updatedAt: nowISO(),
+      tags: [],
+      benefits: [
+        { type: 'DISCOUNT_PERCENT', value: 10, targetCategory: 'RETAIL', description: '10% off Retail' },
+        { type: 'DISCOUNT_PERCENT', value: 5, targetCategory: 'GROOMING', description: '5% off Grooming' }
+      ]
+    };
+    db.membershipDefinitions.push(goldMember);
+
+    // Seed Packages
+    const dayPass: PackageDefinition = {
+      id: generateId('pkg'),
+      orgId: DEFAULT_ORG_ID,
+      locationId: DEFAULT_LOCATION_ID,
+      name: '10 Day Daycare Pass',
+      price: 31500, // 315.00
+      description: 'Pre-pay for 10 days and save.',
+      expirationDays: 90,
+      isActive: true,
+      createdAt: nowISO(),
+      updatedAt: nowISO(),
+      tags: [],
+      credits: [
+        { serviceCategory: 'SERVICE', quantity: 10, isHourly: false }
+      ]
+    };
+    db.packageDefinitions.push(dayPass);
 
     console.log('✅ Database seeded.');
   });

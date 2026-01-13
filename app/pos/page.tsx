@@ -2,17 +2,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { usePosStore } from '@/store/pos-store';
+import { usePosStore } from '../../store/pos-store';
 import { Search, Grid, List, AlertCircle, User, Plus, Trash2, PawPrint, ShoppingCart, LayoutGrid, Tag, Crown } from 'lucide-react';
-import { Input } from '@/components/Common';
-import { Button } from '@/components/Common';
-import { Card } from '@/components/Common';
-import { Badge } from '@/components/Common';
-import { mockOwners } from '@/types/crm';
-import { formatMoney } from '@/shared/utils';
-import { PaymentModal } from '@/components/pos/PaymentModal';
-import { ShiftManager } from '@/components/pos/ShiftManager';
-import { cn } from '@/lib/utils';
+import { Input } from '../../components/Common';
+import { Button } from '../../components/Common';
+import { Card } from '../../components/Common';
+import { Badge } from '../../components/Common';
+import { mockOwners } from '../../types/crm';
+import { formatMoney } from '../../shared/utils';
+import { PaymentModal } from '../../components/pos/PaymentModal';
+import { ShiftManager } from '../../components/pos/ShiftManager';
+import { cn } from '../../components/Common';
 
 export default function PosPage() {
   const { 

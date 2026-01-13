@@ -105,6 +105,64 @@ export interface CatalogItem extends BaseEntity {
   isActive: boolean;
 }
 
+// --- Loyalty & Memberships ---
+
+export interface MembershipBenefit {
+  id?: string;
+  type: 'DISCOUNT_PERCENT' | 'DISCOUNT_FIXED' | 'CREDIT_DROP';
+  value: number; 
+  targetCategory: string; // 'ALL', 'SERVICE', 'RETAIL'
+  description: string;
+}
+
+export interface MembershipDefinition extends BaseEntity {
+  name: string;
+  price: MoneyCents;
+  billingFrequency: 'MONTHLY' | 'ANNUALLY';
+  benefits: MembershipBenefit[];
+  requiresSignature: boolean;
+  colorHex: string;
+  isActive: boolean;
+}
+
+export interface PackageCreditRule {
+  serviceCategory: string; // 'SERVICE', 'GROOMING'
+  quantity: number;
+  isHourly: boolean;
+}
+
+export interface PackageDefinition extends BaseEntity {
+  name: string;
+  price: MoneyCents;
+  description: string;
+  credits: PackageCreditRule[];
+  expirationDays: number;
+  isActive: boolean;
+}
+
+export interface CreditBalance extends BaseEntity {
+  ownerId: ID;
+  packageDefinitionId: ID;
+  serviceCategory: string;
+  remaining: number;
+  isHourly: boolean;
+  expiresAt: ISODate;
+}
+
+export interface UserMembership extends BaseEntity {
+  ownerId: ID;
+  membershipDefinitionId: ID;
+  status: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED';
+  startedAt: ISODate;
+  nextBillDate: ISODate;
+}
+
+export interface UserLedger {
+  ownerId: ID;
+  credits: CreditBalance[];
+  activeMembership?: UserMembership;
+}
+
 // --- Reservations & Operations ---
 
 export const ServiceType = {

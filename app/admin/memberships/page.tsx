@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState } from 'react';
-import { Card, Button, Input, Badge, Switch, Select, Label } from '@/components/Common';
-import { MembershipDefinition, MembershipBenefit } from '@/types/loyalty';
+import { Card, Button, Input, Badge, Switch, Select, Label } from '../../../components/Common';
+import { MembershipDefinition, MembershipBenefit } from '../../../types/loyalty';
 import { Crown, Plus, Trash2, FileText } from 'lucide-react';
-import { formatMoney } from '@/shared/utils';
+import { formatMoney } from '../../../shared/utils';
 
 export default function MembershipBuilderPage() {
   const [memberships, setMemberships] = useState<MembershipDefinition[]>([]);

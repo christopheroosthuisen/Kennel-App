@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -8,10 +9,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Button
-export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline', size?: 'sm' | 'md' | 'lg' | 'icon' }>(
+export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'default', size?: 'sm' | 'md' | 'lg' | 'icon' }>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
       primary: 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm border border-transparent',
+      default: 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm border border-transparent', // Alias for primary
       secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 border border-transparent',
       ghost: 'hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent',
       danger: 'bg-red-600 text-white hover:bg-red-700 border border-transparent',
@@ -70,11 +72,27 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
 );
 Badge.displayName = 'Badge';
 
-// Card
+// Card & Sub-components
 export const Card = ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn('rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm', className)} {...props}>
     {children}
   </div>
+);
+
+export const CardHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+);
+export const CardTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+  <h3 className={cn("font-semibold leading-none tracking-tight", className)} {...props} />
+);
+export const CardDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+  <p className={cn("text-sm text-slate-500", className)} {...props} />
+);
+export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("p-6 pt-0", className)} {...props} />
+);
+export const CardFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("flex items-center p-6 pt-0", className)} {...props} />
 );
 
 // Input
@@ -255,3 +273,30 @@ export const SortableHeader = ({ label, sortKey, currentSort, onSort, className 
     </th>
   );
 };
+
+// Skeleton
+export const Skeleton = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("animate-pulse rounded-md bg-slate-200/50", className)} {...props} />
+);
+
+// Separator
+export const Separator = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("h-[1px] w-full bg-slate-200", className)} {...props} />
+);
+
+// Slider
+export const Slider = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { onValueChange?: (vals: number[]) => void }>(
+  ({ className, value, onValueChange, ...props }, ref) => {
+    return (
+      <input 
+        type="range" 
+        ref={ref}
+        className={cn("w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600", className)}
+        value={Array.isArray(value) ? value[0] : value}
+        onChange={(e) => onValueChange && onValueChange([parseFloat(e.target.value)])}
+        {...props}
+      />
+    )
+  }
+);
+Slider.displayName = "Slider";

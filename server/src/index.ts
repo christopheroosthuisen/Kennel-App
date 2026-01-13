@@ -32,7 +32,6 @@ router.add('POST', '/api/auth/login', async (req, res) => {
     throw new UnauthorizedError('Email and password required');
   }
 
-  // Use withDb to log the attempt safely while reading user
   await withDb(async (db) => {
     let user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
     let isValid = false;
@@ -41,12 +40,8 @@ router.add('POST', '/api/auth/login', async (req, res) => {
       isValid = await verifyPassword(password, user.passwordHash);
     }
 
-    // --- SANDBOX FALLBACK LOGIC ---
-    // If auth fails or user doesn't exist, we fallback to a "Sandbox User" 
-    // that is mapped to the seeded data (DEFAULT_ORG_ID).
     if (!user || !isValid) {
       console.log(`[Auth] Sandbox Access Triggered for: ${email}`);
-      
       user = {
         id: 'sandbox-user',
         email: email,
@@ -57,22 +52,13 @@ router.add('POST', '/api/auth/login', async (req, res) => {
         createdAt: nowISO(),
         updatedAt: nowISO(),
         tags: ['Sandbox'],
-        passwordHash: '' // Not needed for return
+        passwordHash: ''
       };
-      // We accept this as valid for the demo environment
       isValid = true;
     }
-    // ------------------------------
 
-    if (!isValid) {
-      // Should technically be unreachable due to fallback above, but keeping safety
-      throw new UnauthorizedError('Invalid credentials');
-    }
-
-    // Success
     const token = createToken({ sub: user!.id, orgId: user!.orgId, role: user!.role });
     
-    // Log success
     db.auditLogs.push({
         id: generateId('al'),
         orgId: user!.orgId,
@@ -87,7 +73,6 @@ router.add('POST', '/api/auth/login', async (req, res) => {
         tags: []
     });
 
-    // Return token and safe user object
     const { passwordHash, ...safeUser } = user!;
     sendJson(res, 200, { token, user: safeUser });
   });
@@ -151,6 +136,21 @@ router.add('GET', '/api/owners/:id/invoices', requireAuth(finance.listOwnerInvoi
 
 router.add('POST', '/api/payments', requireAuth(finance.recordPayment));
 router.add('POST', '/api/pos/checkout', requireAuth(finance.posCheckout));
+
+// --- Loyalty Routes ---
+router.add('GET', '/api/memberships/definitions', requireAuth(async (req, res) => {
+  await withDb(db => sendJson(res, 200, { data: db.membershipDefinitions.filter(m => m.orgId === req.user!.orgId) }));
+}));
+router.add('GET', '/api/packages/definitions', requireAuth(async (req, res) => {
+  await withDb(db => sendJson(res, 200, { data: db.packageDefinitions.filter(p => p.orgId === req.user!.orgId) }));
+}));
+router.add('GET', '/api/owners/:id/ledger', requireAuth(async (req, res, params) => {
+  await withDb(db => {
+    const credits = db.creditBalances.filter(c => c.ownerId === params.id);
+    const activeMembership = db.userMemberships.find(m => m.ownerId === params.id && m.status === 'ACTIVE');
+    sendJson(res, 200, { data: { ownerId: params.id, credits, activeMembership } });
+  });
+}));
 
 // --- File & Attachment Routes ---
 router.add('POST', '/api/files', requireAuth(files.uploadFile));

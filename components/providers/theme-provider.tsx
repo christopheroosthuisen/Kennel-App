@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { BrandSettings } from "@/types/theme";
-import { DEFAULT_THEME, hexToHsl, getContrastColor } from "@/lib/theme-utils";
+import { BrandSettings } from "../../types/theme";
+import { DEFAULT_THEME, hexToHsl, getContrastColor } from "../../lib/theme-utils";
 
 interface ThemeContextType {
   settings: BrandSettings;

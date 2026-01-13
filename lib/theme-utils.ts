@@ -1,5 +1,5 @@
 
-import { BrandSettings } from "@/types/theme";
+import { BrandSettings } from "../types/theme";
 
 export const DEFAULT_THEME: BrandSettings = {
   identity: {

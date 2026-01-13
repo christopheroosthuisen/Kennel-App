@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Card, Button, Input, Label } from '@/components/Common';
-import { usePosStore } from '@/store/pos-store';
+import { Card, Button, Input, Label } from '../Common';
+import { usePosStore } from '../../store/pos-store';
 import { DollarSign, Lock, Unlock } from 'lucide-react';
 
 export const ShiftManager = () => {

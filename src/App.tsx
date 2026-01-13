@@ -15,7 +15,7 @@ import { Automations } from './components/Automations';
 import { Notifications } from './components/Notifications';
 import { Auth } from './pages/Auth';
 import { Onboarding } from './pages/Onboarding';
-import { AutomationBuilder } from './pages/AutomationBuilder'; // Fixed relative import
+import { AutomationBuilder } from './pages/AutomationBuilder';
 import { Dog } from 'lucide-react';
 import { ReactFlowProvider } from '@xyflow/react'; 
 

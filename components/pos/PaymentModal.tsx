@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Modal, Button, Input, cn } from '@/components/Common';
-import { formatMoney } from '@/shared/utils';
+import { Modal, Button, Input, cn } from '../Common';
+import { formatMoney } from '../../shared/utils';
 import { CreditCard, Banknote, Check, Trash2 } from 'lucide-react';
-import { PaymentMethod } from '@/types/retail';
-import { usePosStore } from '@/store/pos-store';
+import { PaymentMethod } from '../../types/retail';
+import { usePosStore } from '../../store/pos-store';
 
 interface PaymentModalProps {
   isOpen: boolean;

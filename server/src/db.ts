@@ -7,7 +7,8 @@ import {
   ReservationSegment, ReservationLineItem, ReportCard,
   AuditLog, DomainEvent, Workflow, WorkflowRun, InvoiceLineItem,
   ReportCardMedia, Estimate, EstimateLineItem, Agreement,
-  Notification, NotificationComment, MessageThread, Message
+  Notification, NotificationComment, MessageThread, Message,
+  MembershipDefinition, PackageDefinition, UserMembership, CreditBalance
 } from '../../shared/domain';
 
 const DB_PATH = path.join((process as any).cwd(), 'data', 'db.json');
@@ -25,22 +26,32 @@ export interface DbSchema {
   reservationSegments: ReservationSegment[];
   reservationLineItems: ReservationLineItem[];
   
+  // Finance
   estimates: Estimate[];
   estimateLineItems: EstimateLineItem[];
   invoices: Invoice[];
   invoiceLineItems: InvoiceLineItem[];
   payments: Payment[];
   
+  // Loyalty
+  membershipDefinitions: MembershipDefinition[];
+  packageDefinitions: PackageDefinition[];
+  userMemberships: UserMembership[];
+  creditBalances: CreditBalance[];
+
+  // Files & Ops
   files: FileObject[];
   attachments: Attachment[];
   reportCards: ReportCard[];
   reportCardMedia: ReportCardMedia[];
   
+  // Comms
   notifications: Notification[];
   notificationComments: NotificationComment[];
   messageThreads: MessageThread[];
   messages: Message[];
   
+  // System
   auditLogs: AuditLog[];
   events: DomainEvent[];
   workflows: Workflow[];
@@ -63,6 +74,10 @@ const INITIAL_DB: DbSchema = {
   invoices: [],
   invoiceLineItems: [],
   payments: [],
+  membershipDefinitions: [],
+  packageDefinitions: [],
+  userMemberships: [],
+  creditBalances: [],
   files: [],
   attachments: [],
   reportCards: [],
