@@ -11,8 +11,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, cn, Modal, Label, Input, Select, BulkActionBar } from './Common';
 import { EditReservationModal, EditPetModal, EditOwnerModal, AddServiceModal } from './EditModals';
 import { RunCardModal } from './RunCard';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_APPROVALS } from '../constants';
-import { ReservationStatus, ServiceType } from '../types';
+import { ReservationStatus } from '../../shared/domain';
+import { api } from '../api/api';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 type ColumnId = 'select' | 'pet' | 'owner' | 'service' | 'timeline' | 'details' | 'balance' | 'actions';
 
@@ -51,6 +52,14 @@ export const Dashboard = () => {
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement>(null);
 
+  // API Query
+  const { data: reservations = [], refetch: refetchReservations } = useApiQuery('dashboard-reservations', 
+    () => api.getReservations({}) // Load all for now
+  );
+  
+  const { data: owners = [] } = useApiQuery('dashboard-owners', () => api.getOwners());
+  const { data: pets = [] } = useApiQuery('dashboard-pets', () => api.getPets());
+
   // Default Columns Configuration
   const [columns, setColumns] = useState<ColumnDef[]>([
     { id: 'select', label: '', visible: true },
@@ -76,12 +85,25 @@ export const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeActionMenu]);
 
+  // Filtering Logic
   const getReservationsByTab = () => {
+    const today = new Date().toISOString().split('T')[0];
+    
     switch(activeTab) {
-      case 'checked_in': return MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.CheckedIn);
-      case 'expected': return MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.Expected);
-      case 'going_home': return MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.CheckedOut);
-      case 'unconfirmed': return MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.Unconfirmed);
+      case 'checked_in': 
+        return reservations.filter(r => r.status === 'CheckedIn');
+      case 'expected': 
+        return reservations.filter(r => 
+          (r.status === 'Requested' || r.status === 'Confirmed') && 
+          r.startAt.startsWith(today)
+        );
+      case 'going_home': 
+        return reservations.filter(r => 
+          r.status === 'CheckedIn' && 
+          r.endAt.startsWith(today)
+        );
+      case 'unconfirmed': 
+        return reservations.filter(r => r.status === 'Requested');
       default: return [];
     }
   };
@@ -106,15 +128,25 @@ export const Dashboard = () => {
     setColumns(prev => prev.map(col => col.id === id ? { ...col, visible: !col.visible } : col));
   };
 
-  const renderIcons = (pet: any, owner: any) => {
-    const tags = [...(pet.alerts || []), ...(owner.tags || [])];
-    if (!pet.fixed) tags.push('Not Fixed');
-    // Mock Logic for Diet
-    if (pet.feedingInstructions && pet.feedingInstructions.length > 50) tags.push('Special Diet');
+  const handleStatusAction = async (id: string, action: 'confirm' | 'check-in' | 'check-out') => {
+    try {
+      if (action === 'confirm') await api.confirmReservation(id);
+      if (action === 'check-in') await api.checkInReservation(id);
+      if (action === 'check-out') await api.checkOutReservation(id);
+      refetchReservations();
+      setActiveActionMenu(null);
+    } catch (e) {
+      alert('Action failed');
+    }
+  };
 
+  const renderIcons = (pet: any, owner: any) => {
+    if (!pet || !owner) return null;
+    const tags = [...(pet.tags || []), ...(owner.tags || [])]; 
+    if (!pet.fixed) tags.push('Not Fixed');
+    
     return (
       <div className="flex flex-wrap gap-1 mt-1.5">
-        {/* Fixed Attributes (Always show icons for these states) */}
         {pet.vaccineStatus === 'Valid' && (
            <div title="Vaccines Valid" className="h-5 w-5 flex items-center justify-center bg-green-50 text-green-600 rounded border border-green-200 cursor-help transition-transform hover:scale-110"><CheckCircle size={12}/></div>
         )}
@@ -125,11 +157,9 @@ export const Dashboard = () => {
            <div title="Vaccines Expired" className="h-5 w-5 flex items-center justify-center bg-red-50 text-red-600 rounded border border-red-200 cursor-help transition-transform hover:scale-110"><AlertTriangle size={12}/></div>
         )}
 
-        {/* Dynamic Tags from Map */}
         {tags.map((tag, idx) => {
           const config = ICON_MAP[tag];
           if (!config) return null;
-          
           return (
              <div key={`${tag}-${idx}`} title={config.title} className={cn("h-5 w-5 flex items-center justify-center rounded border cursor-help text-xs font-normal transition-transform hover:scale-110", config.color, config.border || 'border-transparent')}>
                 {config.icon}
@@ -172,24 +202,24 @@ export const Dashboard = () => {
         
         <StatWidget 
           title="In House" 
-          count={42} 
+          count={reservations.filter(r => r.status === 'CheckedIn').length} 
           icon={Users} 
           color="#3b82f6" 
-          subtext="24 Dogs, 18 Cats" 
+          subtext="Total checked in" 
         />
         <StatWidget 
           title="Arriving" 
-          count={12} 
+          count={reservations.filter(r => (r.status === 'Confirmed' || r.status === 'Requested') && r.startAt.startsWith(new Date().toISOString().split('T')[0])).length} 
           icon={Calendar} 
           color="#eab308" 
-          subtext="3 pre-checked" 
+          subtext="Expected today" 
         />
         <StatWidget 
           title="Departing" 
-          count={8} 
+          count={reservations.filter(r => r.status === 'CheckedIn' && r.endAt.startsWith(new Date().toISOString().split('T')[0])).length} 
           icon={LogOut} 
           color="#22c55e" 
-          subtext="All invoices paid" 
+          subtext="Going home today" 
         />
         
         {/* Weather/Shortcuts */}
@@ -209,41 +239,17 @@ export const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Approvals Section (Human-in-the-Loop) */}
-      {MOCK_APPROVALS.length > 0 && (
-        <Card className="border-l-4 border-l-amber-500 bg-amber-50/20">
-           <div className="p-4 flex justify-between items-center border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-amber-500"/> Pending Approvals</h3>
-              <Link to="/automations" className="text-xs text-primary-600 font-medium hover:underline">View All in Automations</Link>
-           </div>
-           <div className="p-2">
-              {MOCK_APPROVALS.map(app => (
-                 <div key={app.id} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm mb-1 last:mb-0 border border-slate-100">
-                    <div>
-                       <div className="font-medium text-slate-900">{app.description}</div>
-                       <div className="text-xs text-slate-500 mt-0.5">Workflow: {app.workflowName} • {app.requestedAt}</div>
-                    </div>
-                    <div className="flex gap-2">
-                       <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50 gap-1"><ThumbsDown size={14}/> Deny</Button>
-                       <Button size="sm" variant="secondary" className="text-green-600 hover:bg-green-50 border-green-200 gap-1"><ThumbsUp size={14}/> Approve</Button>
-                    </div>
-                 </div>
-              ))}
-           </div>
-        </Card>
-      )}
-
       {/* Main Tabbed Content */}
       <Card className="overflow-visible border shadow-sm flex flex-col min-h-[500px]">
          {/* Tabs Header */}
          <div className="border-b border-slate-200 bg-white px-4 pt-4 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
             <div className="flex space-x-6 overflow-x-auto no-scrollbar">
               {[
-                { id: 'notices', label: 'Notices', count: 2, color: 'text-red-600 bg-red-50' },
-                { id: 'expected', label: 'Expected', count: 12 },
-                { id: 'going_home', label: 'Going Home', count: 8 },
-                { id: 'checked_in', label: 'Checked In', count: 42 },
-                { id: 'unconfirmed', label: 'Unconfirmed', count: 5 },
+                { id: 'notices', label: 'Notices', count: 0, color: 'text-red-600 bg-red-50' },
+                { id: 'expected', label: 'Expected', count: reservations.filter(r => (r.status === 'Requested' || r.status === 'Confirmed') && r.startAt.startsWith(new Date().toISOString().split('T')[0])).length },
+                { id: 'going_home', label: 'Going Home', count: reservations.filter(r => r.status === 'CheckedIn' && r.endAt.startsWith(new Date().toISOString().split('T')[0])).length },
+                { id: 'checked_in', label: 'Checked In', count: reservations.filter(r => r.status === 'CheckedIn').length },
+                { id: 'unconfirmed', label: 'Unconfirmed', count: reservations.filter(r => r.status === 'Requested').length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -301,16 +307,6 @@ export const Dashboard = () => {
                          </div>
                       </div>
                    </Card>
-                   <Card className="p-4 border-l-4 border-l-blue-500 bg-blue-50/10">
-                      <div className="flex items-start gap-3">
-                         <div className="text-blue-500 font-bold">ℹ️</div>
-                         <div>
-                           <h4 className="font-bold text-blue-900 text-sm">Playground Maintenance</h4>
-                           <p className="text-sm text-blue-800 mt-1">The large dog turf is being cleaned from 11am-1pm. Use the side yards.</p>
-                           <p className="text-xs text-blue-600 mt-2 font-medium">Posted by Maintenance • Yesterday</p>
-                         </div>
-                      </div>
-                   </Card>
                 </div>
               </div>
             ) : (
@@ -338,8 +334,8 @@ export const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {currentList.length > 0 ? currentList.map((res) => {
-                    const pet = MOCK_PETS.find(p => p.id === res.petId);
-                    const owner = MOCK_OWNERS.find(o => o.id === res.ownerId);
+                    const pet = pets.find(p => p.id === res.petId);
+                    const owner = owners.find(o => o.id === res.ownerId);
                     
                     return (
                       <tr key={res.id} className="hover:bg-slate-50/80 transition-colors group">
@@ -378,10 +374,9 @@ export const Dashboard = () => {
                                     to={`/owners-pets?id=${owner?.id}&type=owners`}
                                     className="font-medium text-slate-900 hover:text-primary-600 hover:underline block"
                                   >
-                                    {owner?.name}
+                                    {owner?.firstName} {owner?.lastName}
                                   </Link>
                                   <div className="flex gap-2 mt-1">
-                                    {/* Action Shortcuts */}
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-primary-600 hover:bg-slate-100" title="Copy Email">
                                       <Mail size={12}/>
                                     </Button>
@@ -395,7 +390,6 @@ export const Dashboard = () => {
                               return (
                                 <td key={col.id} className="px-6 py-4 align-top">
                                   <div className="font-semibold text-slate-800">{res.type}</div>
-                                  {res.lodging && <div className="text-xs text-slate-500 mt-1 flex items-center gap-1"><ExternalLink size={10}/> {res.lodging}</div>}
                                 </td>
                               );
                             case 'timeline':
@@ -404,13 +398,13 @@ export const Dashboard = () => {
                                   <div className="flex flex-col gap-1.5">
                                     <div className="flex items-center gap-2">
                                        <Badge variant="outline" className="text-[9px] w-12 justify-center bg-slate-50">Start</Badge>
-                                       <span className="font-medium text-xs">{new Date(res.checkIn).toLocaleDateString()}</span>
-                                       <span className="text-xs text-slate-400">{new Date(res.checkIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                       <span className="font-medium text-xs">{new Date(res.startAt).toLocaleDateString()}</span>
+                                       <span className="text-xs text-slate-400">{new Date(res.startAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                        <Badge variant="outline" className="text-[9px] w-12 justify-center bg-slate-50">End</Badge>
-                                       <span className="font-medium text-xs">{new Date(res.checkOut).toLocaleDateString()}</span>
-                                       <span className="text-xs text-slate-400">{new Date(res.checkOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                       <span className="font-medium text-xs">{new Date(res.endAt).toLocaleDateString()}</span>
+                                       <span className="text-xs text-slate-400">{new Date(res.endAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                     </div>
                                   </div>
                                 </td>
@@ -419,13 +413,9 @@ export const Dashboard = () => {
                               return (
                                 <td key={col.id} className="px-6 py-4 align-top">
                                   <div className="flex flex-col gap-1">
-                                    {res.services.length > 0 && (
-                                       <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Add-ons</div>
-                                    )}
                                     <div className="flex flex-wrap gap-1">
-                                       {res.services.map(s => <Badge key={s} variant="outline" className="bg-white">{s}</Badge>)}
                                        {res.isPreChecked && <Badge variant="success" className="gap-1"><CheckCircle size={8}/> Pre-Checked</Badge>}
-                                       {res.services.length === 0 && !res.isPreChecked && <span className="text-xs text-slate-300 italic">None</span>}
+                                       {!res.isPreChecked && <span className="text-xs text-slate-300 italic">None</span>}
                                     </div>
                                   </div>
                                 </td>
@@ -434,7 +424,7 @@ export const Dashboard = () => {
                               return (
                                 <td key={col.id} className="px-6 py-4 align-top">
                                   <span className={cn("text-xs font-bold px-2 py-1 rounded border", (owner?.balance || 0) > 0 ? "bg-red-50 text-red-700 border-red-100" : "bg-green-50 text-green-700 border-green-100")}>
-                                    ${owner?.balance.toFixed(2)}
+                                    ${((owner?.balance || 0) / 100).toFixed(2)}
                                   </span>
                                 </td>
                               );
@@ -461,81 +451,42 @@ export const Dashboard = () => {
                                             className="absolute right-10 top-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden flex flex-col"
                                           >
                                             <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                               <div className="text-xs font-bold text-slate-500 uppercase">Reservation #{res.id}</div>
+                                               <div className="text-xs font-bold text-slate-500 uppercase">Reservation</div>
                                                <Badge variant="outline" className="bg-white text-[10px]">{res.status}</Badge>
                                             </div>
                                             
                                             <div className="p-1 space-y-0.5">
-                                               {res.status === ReservationStatus.Expected && (
-                                                 <button className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 rounded flex items-center gap-3 transition-colors text-slate-700">
+                                               {(res.status === 'Requested' || res.status === 'Confirmed') && (
+                                                 <button 
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 rounded flex items-center gap-3 transition-colors text-slate-700"
+                                                    onClick={() => handleStatusAction(res.id, res.status === 'Requested' ? 'confirm' : 'check-in')}
+                                                 >
                                                     <LogIn size={16} className="text-green-500"/> 
-                                                    <span className="font-medium">Check In</span>
+                                                    <span className="font-medium">{res.status === 'Requested' ? 'Confirm' : 'Check In'}</span>
                                                  </button>
                                                )}
-                                               {res.status === ReservationStatus.CheckedIn && (
-                                                  <button className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 rounded flex items-center gap-3 transition-colors text-slate-700">
+                                               {res.status === 'CheckedIn' && (
+                                                  <button 
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 rounded flex items-center gap-3 transition-colors text-slate-700"
+                                                    onClick={() => handleStatusAction(res.id, 'check-out')}
+                                                  >
                                                      <LogOut size={16} className="text-amber-500"/> 
                                                      <span className="font-medium">Check Out</span>
                                                   </button>
                                                )}
                                                
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
-                                                  <DollarSign size={16} className="text-slate-400"/> View Estimate
-                                               </button>
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700" 
-                                                  onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
-                                               >
-                                                  <FileText size={16} className="text-slate-400"/> Run Card
-                                               </button>
-                                            </div>
-                                            
-                                            <div className="h-px bg-slate-100 my-1"/>
-                                            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Communication</div>
-                                            
-                                            <div className="p-1 space-y-0.5">
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
-                                                  <MessageSquare size={16} className="text-blue-400"/> SMS Parent
-                                               </button>
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
-                                                  <Mail size={16} className="text-blue-400"/> Email Parent
-                                               </button>
-                                            </div>
-                                            
-                                            <div className="h-px bg-slate-100 my-1"/>
-                                            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Manage</div>
-
-                                            <div className="p-1 space-y-0.5">
                                                <button 
                                                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
                                                   onClick={() => { setActiveModal({ type: 'reservation', id: res.id }); setActiveActionMenu(null); }}
                                                >
-                                                  <Edit2 size={16} className="text-slate-400"/> Edit Reservation
+                                                  <Edit2 size={16} className="text-slate-400"/> Edit Details
                                                </button>
                                                <button 
-                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
-                                                  onClick={() => { setActiveModal({ type: 'pet', id: pet?.id || '' }); setActiveActionMenu(null); }}
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
+                                                  onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
                                                 >
-                                                  <Dog size={16} className="text-slate-400"/> Edit Pet
-                                               </button>
-                                               <button 
-                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
-                                                  onClick={() => { setActiveModal({ type: 'owner', id: owner?.id || '' }); setActiveActionMenu(null); }}
-                                                >
-                                                  <User size={16} className="text-slate-400"/> Edit Owner
-                                               </button>
-                                                <button 
-                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
-                                                  onClick={() => { setActiveModal({ type: 'service', id: res.id }); setActiveActionMenu(null); }}
-                                                >
-                                                  <Plus size={16} className="text-slate-400"/> Add Service / Add-on
-                                               </button>
-                                            </div>
-                                            
-                                            <div className="h-px bg-slate-100 my-1"/>
-                                            <div className="p-1">
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 hover:text-red-600 rounded flex items-center gap-3 text-red-600 transition-colors">
-                                                  <Trash2 size={16}/> Cancel / Delete
-                                               </button>
+                                                    <FileText size={16} className="text-slate-400"/> Run Card
+                                                </button>
                                             </div>
                                          </div>
                                       )}
@@ -580,15 +531,15 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
-               {MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.Expected).map(r => {
-                 const pet = MOCK_PETS.find(p => p.id === r.petId);
+               {reservations.filter(r => r.status === 'Confirmed' && r.startAt.startsWith(new Date().toISOString().split('T')[0])).map(r => {
+                 const pet = pets.find(p => p.id === r.petId);
                  return (
                    <div key={r.id} className="p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                         <img src={pet?.photoUrl} className="h-8 w-8 rounded-full" />
+                         <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">{pet?.name[0]}</div>
                          <span className="font-medium text-slate-800">{pet?.name}</span>
                       </div>
-                      <Button size="sm" variant="outline">Check In</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleStatusAction(r.id, 'check-in')}>Check In</Button>
                    </div>
                  )
                })}
@@ -596,75 +547,32 @@ export const Dashboard = () => {
          </div>
       </Modal>
 
-      {/* Column Config Modal */}
-      <Modal isOpen={isColumnConfigOpen} onClose={() => setIsColumnConfigOpen(false)} title="Configure Columns" size="sm">
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500 mb-4">Toggle visibility and reorder columns for the dashboard table.</p>
-          <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-            {columns.map((col, index) => (
-              <div key={col.id} className="flex items-center justify-between p-2 border border-slate-100 rounded bg-white hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col gap-0.5 text-slate-300 cursor-grab active:cursor-grabbing">
-                    <button 
-                      onClick={() => moveColumn(index, 'up')}
-                      disabled={index === 0}
-                      className="hover:text-slate-600 disabled:opacity-30"
-                    >
-                      <ArrowUp size={12}/>
-                    </button>
-                    <button 
-                      onClick={() => moveColumn(index, 'down')}
-                      disabled={index === columns.length - 1}
-                      className="hover:text-slate-600 disabled:opacity-30"
-                    >
-                      <ArrowDown size={12}/>
-                    </button>
-                  </div>
-                  <span className={cn("text-sm font-medium", !col.visible && "text-slate-400")}>
-                    {col.label || (col.id === 'select' ? 'Selection Checkbox' : col.id)}
-                  </span>
-                </div>
-                <button 
-                  onClick={() => toggleColumnVisibility(col.id)}
-                  className={cn("text-slate-400 hover:text-primary-600", col.visible && "text-primary-600")}
-                >
-                  {col.visible ? <Eye size={16}/> : <EyeOff size={16}/>}
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="pt-4 mt-4 border-t border-slate-100 flex justify-end">
-            <Button onClick={() => setIsColumnConfigOpen(false)}>Done</Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Edit Modals */}
       {activeModal?.type === 'reservation' && (
         <EditReservationModal 
           isOpen={true} 
-          onClose={() => setActiveModal(null)} 
+          onClose={() => { setActiveModal(null); refetchReservations(); }} 
           id={activeModal.id} 
         />
       )}
       {activeModal?.type === 'pet' && (
         <EditPetModal 
           isOpen={true} 
-          onClose={() => setActiveModal(null)} 
+          onClose={() => { setActiveModal(null); /* refetchPets() in future */ }} 
           id={activeModal.id} 
         />
       )}
       {activeModal?.type === 'owner' && (
         <EditOwnerModal 
           isOpen={true} 
-          onClose={() => setActiveModal(null)} 
+          onClose={() => { setActiveModal(null); /* refetchOwners() in future */ }} 
           id={activeModal.id} 
         />
       )}
       {activeModal?.type === 'service' && (
         <AddServiceModal 
           isOpen={true} 
-          onClose={() => setActiveModal(null)} 
+          onClose={() => { setActiveModal(null); refetchReservations(); }} 
           id={activeModal.id} 
         />
       )}

@@ -2,8 +2,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Printer, Phone, AlertTriangle, Info, MapPin, Calendar, Activity, Utensils, Edit2, Save, Plus, Trash2 } from 'lucide-react';
 import { Modal, Button, Badge, cn, Textarea, Input, Label } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS } from '../constants';
-import { ReservationStatus, Medication } from '../types';
+import { Medication, Reservation } from '../../shared/domain';
+import { api } from '../api/api';
+import { useApiQuery } from '../hooks/useApiQuery';
 
 interface RunCardProps {
   reservationId: string;
@@ -12,9 +13,13 @@ interface RunCardProps {
 }
 
 export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const { data: reservation } = useApiQuery(`rc-res-${reservationId}`, () => api.getReservation(reservationId));
+  // In a real optimized app, we'd fetch these efficiently or have them in context
+  const { data: pets = [] } = useApiQuery('rc-pets', () => api.getPets());
+  const { data: owners = [] } = useApiQuery('rc-owners', () => api.getOwners());
+
+  const pet = pets.find(p => p.id === reservation?.petId);
+  const owner = owners.find(o => o.id === reservation?.ownerId);
 
   // Local state for editing
   const [isEditing, setIsEditing] = useState(false);
@@ -29,8 +34,8 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
   useEffect(() => {
     if (pet && reservation) {
       setEditedData({
-        weight: pet.weight,
-        feedingInstructions: pet.feedingInstructions,
+        weight: pet.weightLbs || 0,
+        feedingInstructions: pet.feedingInstructions || '',
         behaviorNotes: pet.behaviorNotes || '',
         reservationNotes: reservation.notes || '',
         medications: pet.medications ? [...pet.medications] : []
@@ -41,7 +46,7 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
   if (!reservation || !pet || !owner) return null;
 
   // Calculate Age
-  const birthDate = new Date(pet.dob);
+  const birthDate = pet.dob ? new Date(pet.dob) : new Date();
   const today = new Date();
   let ageYears = today.getFullYear() - birthDate.getFullYear();
   let ageMonths = today.getMonth() - birthDate.getMonth();
@@ -57,7 +62,6 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
 
   const handleSave = () => {
     // In a real app, this would API call to update Pet and Reservation
-    // For now, we just exit edit mode, keeping the local state changes visible
     setIsEditing(false);
   };
 
@@ -84,10 +88,10 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
     setEditedData({ ...editedData, medications: [...editedData.medications, newMed] });
   };
 
-  // Determine Alert Level
-  const hasAggression = pet.alerts.some(a => a.toLowerCase().includes('aggressive') || a.toLowerCase().includes('caution'));
+  const petTags = pet.tags || [];
+  const hasAggression = petTags.some(a => a.toLowerCase().includes('aggressive') || a.toLowerCase().includes('caution'));
   const hasMeds = editedData.medications.length > 0;
-  const isEscapeArtist = pet.alerts.some(a => a.toLowerCase().includes('escape'));
+  const isEscapeArtist = petTags.some(a => a.toLowerCase().includes('escape'));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Run Card Preview" size="xl">
@@ -121,21 +125,18 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
           
           {/* Top Header Section */}
           <div className="p-6 border-b-2 border-slate-800 flex gap-6">
-            {/* Photo */}
-            <div className="w-48 h-48 shrink-0 border-2 border-slate-300 bg-slate-100 rounded-md overflow-hidden relative">
-               <img src={pet.photoUrl} className="w-full h-full object-cover" alt={pet.name} />
-            </div>
-
             {/* Core Info */}
             <div className="flex-1">
                <div className="flex justify-between items-start">
                   <div>
                     <h1 className="text-6xl font-black uppercase tracking-tight leading-none mb-1">{pet.name}</h1>
-                    <h2 className="text-3xl font-light text-slate-600 uppercase">{owner.name.split(' ').pop()}</h2>
+                    <h2 className="text-3xl font-light text-slate-600 uppercase">{owner.lastName}</h2>
                   </div>
                   <div className="text-right">
                      <div className="text-4xl font-bold bg-slate-900 text-white px-4 py-2 rounded-sm inline-block mb-2">
-                       {reservation.lodging || "UNASSIGNED"}
+                       {/* Simplified unit display */}
+                       {/* In real implementation, derive from segments */}
+                       UNASSIGNED
                      </div>
                      <div className="text-sm font-semibold text-slate-500 uppercase tracking-widest">{reservation.type}</div>
                   </div>
@@ -146,16 +147,16 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                      <Calendar size={18} className="text-slate-400"/> 
                      <div>
                         <span className="block text-xs uppercase font-bold text-slate-400">Check In</span>
-                        <span className="font-bold text-lg">{new Date(reservation.checkIn).toLocaleDateString()}</span>
-                        <span className="text-slate-500 ml-1">{new Date(reservation.checkIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span className="font-bold text-lg">{new Date(reservation.startAt).toLocaleDateString()}</span>
+                        <span className="text-slate-500 ml-1">{new Date(reservation.startAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                      </div>
                   </div>
                   <div className="flex items-center gap-2">
                      <Calendar size={18} className="text-slate-400"/> 
                      <div>
                         <span className="block text-xs uppercase font-bold text-slate-400">Check Out</span>
-                        <span className="font-bold text-lg">{new Date(reservation.checkOut).toLocaleDateString()}</span>
-                        <span className="text-slate-500 ml-1">{new Date(reservation.checkOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span className="font-bold text-lg">{new Date(reservation.endAt).toLocaleDateString()}</span>
+                        <span className="text-slate-500 ml-1">{new Date(reservation.endAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                      </div>
                   </div>
                </div>
@@ -214,14 +215,14 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                    <h3 className="text-xs font-bold uppercase text-slate-400 mb-2 border-b border-slate-100 pb-1">Contact Info</h3>
                    <div className="space-y-2 text-sm">
                       <div>
-                         <span className="block font-bold">{owner.name}</span>
+                         <span className="block font-bold">{owner.firstName} {owner.lastName}</span>
                          <span className="flex items-center gap-2 mt-0.5"><Phone size={14}/> {owner.phone}</span>
                       </div>
-                      {owner.emergencyContact && (
+                      {owner.emergencyContactName && (
                         <div className="mt-3 bg-slate-50 p-2 rounded border border-slate-100">
                            <span className="text-xs text-slate-500 uppercase block mb-1">Emergency Contact</span>
-                           <span className="block font-bold">{owner.emergencyContact.name} ({owner.emergencyContact.relation})</span>
-                           <span className="block">{owner.emergencyContact.phone}</span>
+                           <span className="block font-bold">{owner.emergencyContactName}</span>
+                           <span className="block">{owner.emergencyContactPhone}</span>
                         </div>
                       )}
                    </div>
@@ -229,17 +230,7 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
 
                 <section>
                    <h3 className="text-xs font-bold uppercase text-slate-400 mb-2 border-b border-slate-100 pb-1">Veterinarian</h3>
-                   <div className="text-sm font-medium">{pet.vet}</div>
-                </section>
-
-                <section>
-                   <h3 className="text-xs font-bold uppercase text-slate-400 mb-2 border-b border-slate-100 pb-1">Services & Add-ons</h3>
-                   <div className="flex flex-wrap gap-1">
-                      {reservation.services.map(s => (
-                         <span key={s} className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded border border-slate-200">{s}</span>
-                      ))}
-                      {reservation.services.length === 0 && <span className="text-sm text-slate-400 italic">No add-ons selected</span>}
-                   </div>
+                   <div className="text-sm font-medium">{pet.vetName}</div>
                 </section>
              </div>
 
@@ -262,18 +253,6 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                             <span>{editedData.behaviorNotes || "Standard friendly behavior."}</span>
                          )}
                       </div>
-                      {!isEditing && (
-                        <>
-                           <div>
-                              <span className="font-bold text-slate-700 block">Triggers / Fears:</span>
-                              <span>Thunderstorms, Vacuums</span>
-                           </div>
-                           <div>
-                              <span className="font-bold text-slate-700 block">Occupation / Habits:</span>
-                              <span>Loves fetch, Ball obsessed</span>
-                           </div>
-                        </>
-                      )}
                    </div>
                 </section>
 
@@ -347,31 +326,6 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                    ) : (
                       <span>{editedData.feedingInstructions}</span>
                    )}
-                </div>
-
-                <div className="w-full border border-slate-300 rounded-sm overflow-hidden">
-                   <div className="grid grid-cols-4 bg-slate-200 text-center text-xs font-bold uppercase py-2 border-b border-slate-300 text-slate-600">
-                      <div>Morning (AM)</div>
-                      <div>Noon (Mid)</div>
-                      <div>Evening (PM)</div>
-                      <div>Bedtime</div>
-                   </div>
-                   <div className="grid grid-cols-4 text-center divide-x divide-slate-300 min-h-[80px]">
-                      <div className="p-2 flex flex-col justify-center">
-                         <span className="text-lg font-bold">1 Cup</span>
-                         <span className="text-xs text-slate-500">Dry Kibble</span>
-                      </div>
-                      <div className="p-2 flex flex-col justify-center bg-slate-50">
-                         <span className="text-slate-400 text-xs italic">--</span>
-                      </div>
-                      <div className="p-2 flex flex-col justify-center">
-                         <span className="text-lg font-bold">1 Cup</span>
-                         <span className="text-xs text-slate-500">+ Meds</span>
-                      </div>
-                      <div className="p-2 flex flex-col justify-center bg-slate-50">
-                         <span className="text-sm font-medium">1 Treat</span>
-                      </div>
-                   </div>
                 </div>
              </div>
           </div>

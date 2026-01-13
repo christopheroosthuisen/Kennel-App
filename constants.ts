@@ -55,13 +55,13 @@ export const MOCK_PETS: Pet[] = [
 ];
 
 export const MOCK_RESERVATIONS: Reservation[] = [
-  { id: 'r1', petId: 'p1', ownerId: 'o1', type: ServiceType.Boarding, status: ReservationStatus.CheckedIn, checkIn: '2023-10-25T08:00:00', checkOut: '2023-10-30T10:00:00', lodging: 'K101', services: ['Bath', 'Nail Trim'], isPreChecked: true, price: 450 },
-  { id: 'r2', petId: 'p2', ownerId: 'o1', type: ServiceType.Boarding, status: ReservationStatus.CheckedIn, checkIn: '2023-10-25T08:00:00', checkOut: '2023-10-30T10:00:00', lodging: 'K102', services: [], isPreChecked: true, price: 400 },
-  { id: 'r3', petId: 'p3', ownerId: 'o2', type: ServiceType.Daycare, status: ReservationStatus.Expected, checkIn: '2023-10-27T07:30:00', checkOut: '2023-10-27T18:00:00', lodging: 'Playgroup A', services: ['Lunch'], isPreChecked: false, price: 35 },
-  { id: 'r4', petId: 'p4', ownerId: 'o3', type: ServiceType.Grooming, status: ReservationStatus.Requested, checkIn: '2023-10-28T10:00:00', checkOut: '2023-10-28T12:00:00', services: ['Full Groom'], isPreChecked: false, price: 85 },
-  { id: 'r5', petId: 'p1', ownerId: 'o1', type: ServiceType.Daycare, status: ReservationStatus.CheckedOut, checkIn: '2023-10-24T08:00:00', checkOut: '2023-10-24T17:30:00', lodging: 'Playgroup B', services: [], isPreChecked: true, price: 35 },
-  { id: 'r6', petId: 'p3', ownerId: 'o2', type: ServiceType.Boarding, status: ReservationStatus.Unconfirmed, checkIn: '2023-11-01T08:00:00', checkOut: '2023-11-05T10:00:00', lodging: 'Suite 1', services: ['Exit Bath'], isPreChecked: false, price: 550 },
-  { id: 'r7', petId: 'p5', ownerId: 'o4', type: ServiceType.Boarding, status: ReservationStatus.Confirmed, checkIn: '2023-10-29T14:00:00', checkOut: '2023-11-02T10:00:00', lodging: 'K103', services: [], isPreChecked: false, price: 320 },
+  { id: 'r1', petId: 'p1', ownerId: 'o1', orgId: 'org1', type: ServiceType.Boarding, status: ReservationStatus.CheckedIn, checkIn: '2023-10-25T08:00:00', checkOut: '2023-10-30T10:00:00', lodging: 'K101', services: ['Bath', 'Nail Trim'], isPreChecked: true, price: 450 },
+  { id: 'r2', petId: 'p2', ownerId: 'o1', orgId: 'org1', type: ServiceType.Boarding, status: ReservationStatus.CheckedIn, checkIn: '2023-10-25T08:00:00', checkOut: '2023-10-30T10:00:00', lodging: 'K102', services: [], isPreChecked: true, price: 400 },
+  { id: 'r3', petId: 'p3', ownerId: 'o2', orgId: 'org1', type: ServiceType.Daycare, status: ReservationStatus.Expected, checkIn: '2023-10-27T07:30:00', checkOut: '2023-10-27T18:00:00', lodging: 'Playgroup A', services: ['Lunch'], isPreChecked: false, price: 35 },
+  { id: 'r4', petId: 'p4', ownerId: 'o3', orgId: 'org1', type: ServiceType.Grooming, status: ReservationStatus.Requested, checkIn: '2023-10-28T10:00:00', checkOut: '2023-10-28T12:00:00', services: ['Full Groom'], isPreChecked: false, price: 85 },
+  { id: 'r5', petId: 'p1', ownerId: 'o1', orgId: 'org1', type: ServiceType.Daycare, status: ReservationStatus.CheckedOut, checkIn: '2023-10-24T08:00:00', checkOut: '2023-10-24T17:30:00', lodging: 'Playgroup B', services: [], isPreChecked: true, price: 35 },
+  { id: 'r6', petId: 'p3', ownerId: 'o2', orgId: 'org1', type: ServiceType.Boarding, status: ReservationStatus.Unconfirmed, checkIn: '2023-11-01T08:00:00', checkOut: '2023-11-05T10:00:00', lodging: 'Suite 1', services: ['Exit Bath'], isPreChecked: false, price: 550 },
+  { id: 'r7', petId: 'p5', ownerId: 'o4', orgId: 'org1', type: ServiceType.Boarding, status: ReservationStatus.Confirmed, checkIn: '2023-10-29T14:00:00', checkOut: '2023-11-02T10:00:00', lodging: 'K103', services: [], isPreChecked: false, price: 320 },
 ];
 
 export const MOCK_INVOICES: Invoice[] = [
