@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { Camera, Send, Smile, Frown, Meh, Utensils, CheckCircle, FileText, Plus } from 'lucide-react';
+import { Camera, Send, Smile, Frown, Meh, Utensils, CheckCircle, FileText, Plus, Mic, Video } from 'lucide-react';
 import { Card, Button, Badge, Input, cn, Modal, Label, Select, Textarea } from './Common';
 import { api } from '../api/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { uploadFile } from '../utils/files';
 import { ReportCard } from '../../shared/domain';
+import { AudioRecorder } from '../utils/audio';
+import { transcribeAudio, analyzeVideo } from '../services/ai';
 
 export const ReportCards = () => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -101,6 +103,10 @@ export const ReportCards = () => {
 const ReportCardEditor = ({ card, onUpdate, pets }: { card: ReportCard, onUpdate: () => void, pets: any[] }) => {
    const [notes, setNotes] = useState(card.notes);
    const { data: media = [], refetch: refetchMedia } = useApiQuery(`rc-media-${card.id}`, () => api.getReportCardMedia(card.id));
+   
+   const [isRecording, setIsRecording] = useState(false);
+   const [recorder, setRecorder] = useState<AudioRecorder | null>(null);
+   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
 
    const handleSave = async (updates: Partial<ReportCard>) => {
       await api.updateReportCard(card.id, updates);
@@ -110,12 +116,42 @@ const ReportCardEditor = ({ card, onUpdate, pets }: { card: ReportCard, onUpdate
    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files?.length) return;
       const file = e.target.files[0];
+      
+      // Video Analysis Hook
+      if (file.type.startsWith('video/')) {
+         setIsProcessingVideo(true);
+         try {
+            const summary = await analyzeVideo(file);
+            setNotes(prev => (prev ? prev + '\n\n' : '') + `[Video Analysis]: ${summary}`);
+            handleSave({ notes: (notes ? notes + '\n\n' : '') + `[Video Analysis]: ${summary}` });
+         } catch(e) { console.error(e); }
+         setIsProcessingVideo(false);
+      }
+
       try {
          const uploaded = await uploadFile(file);
          await api.addReportCardMedia(card.id, uploaded.id);
          refetchMedia();
       } catch (e) {
          alert('Upload failed');
+      }
+   };
+
+   const toggleRecording = async () => {
+      if (isRecording) {
+         setIsRecording(false);
+         if (recorder) {
+            const base64 = await recorder.stop();
+            const text = await transcribeAudio(base64);
+            setNotes(prev => (prev ? prev + ' ' : '') + text);
+            handleSave({ notes: (notes ? notes + ' ' : '') + text });
+            setRecorder(null);
+         }
+      } else {
+         const newRecorder = new AudioRecorder();
+         await newRecorder.start();
+         setRecorder(newRecorder);
+         setIsRecording(true);
       }
    };
 
@@ -177,17 +213,24 @@ const ReportCardEditor = ({ card, onUpdate, pets }: { card: ReportCard, onUpdate
              {/* Photos */}
              <div className="space-y-3">
                <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Photos/Video</label>
+               {isProcessingVideo && <Badge variant="warning" className="mb-2">Analyzing Video Content...</Badge>}
                <div className="flex gap-4 overflow-x-auto pb-2">
                   <div className="relative h-32 w-32 shrink-0">
-                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileUpload} accept="image/*" />
+                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFileUpload} accept="image/*,video/*" />
                      <div className="h-full w-full bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-primary-400 hover:text-primary-500 transition-colors">
                         <Camera size={24}/>
-                        <span className="text-xs mt-2">Add Photo</span>
+                        <span className="text-xs mt-2">Add Media</span>
                      </div>
                   </div>
                   {media.map((m: any) => (
-                     <div key={m.id} className="h-32 w-32 shrink-0 bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
-                        <img src={m.url} className="h-full w-full object-cover" alt="" />
+                     <div key={m.id} className="h-32 w-32 shrink-0 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 relative">
+                        {m.file?.mimeType.startsWith('video') ? (
+                           <div className="w-full h-full flex items-center justify-center bg-black">
+                              <Video className="text-white"/>
+                           </div>
+                        ) : (
+                           <img src={m.url} className="h-full w-full object-cover" alt="" />
+                        )}
                      </div>
                   ))}
                </div>
@@ -195,12 +238,23 @@ const ReportCardEditor = ({ card, onUpdate, pets }: { card: ReportCard, onUpdate
 
             {/* Notes */}
             <div className="space-y-3">
-               <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Note to Parent</label>
+               <div className="flex justify-between items-center">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Note to Parent</label>
+                  <Button 
+                     size="sm" 
+                     variant={isRecording ? 'danger' : 'outline'} 
+                     className="gap-2 h-7 text-xs" 
+                     onClick={toggleRecording}
+                  >
+                     <Mic size={12} className={isRecording ? "animate-pulse" : ""}/> {isRecording ? 'Stop Dictation' : 'Dictate'}
+                  </Button>
+               </div>
                <textarea 
                   className="w-full h-32 p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none resize-none"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   onBlur={() => handleSave({ notes })}
+                  placeholder="Type or dictate daily notes..."
                />
             </div>
          </div>

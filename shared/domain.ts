@@ -83,6 +83,7 @@ export interface Pet extends BaseEntity {
   vaccineStatus: 'Valid' | 'Expiring' | 'Expired' | 'Unknown';
   vaccinations: Vaccination[];
   medications: Medication[];
+  photoUrl?: string;
 }
 
 // --- Facilities & Catalog ---

@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Calendar, Search, Filter, Plus, MoreHorizontal, Check, User, Dog, 
   ChevronLeft, ChevronRight, Clock, AlertCircle, Edit2, DollarSign, Trash2, 
-  Mail, MessageSquare, Printer, FileText
+  Mail, MessageSquare, Printer, FileText, Volume2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Input, Select, Badge, Modal, Label, cn, SortableHeader, BulkActionBar } from './Common';
@@ -12,6 +12,8 @@ import { EstimateModal } from './EstimateModal';
 import { ReservationStatus } from '../../shared/domain';
 import { api } from '../api/api';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { speakText } from '../services/ai';
+import { playPcmAudio } from '../utils/audio';
 
 export const Reservations = () => {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -53,6 +55,14 @@ export const Reservations = () => {
       key,
       dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc'
     }));
+  };
+
+  const handleSpeakNotes = async (notes: string) => {
+    if (!notes) return;
+    try {
+      const audio = await speakText(notes);
+      if (audio) playPcmAudio(audio);
+    } catch(e) { console.error(e); }
   };
 
   return (
@@ -154,6 +164,11 @@ export const Reservations = () => {
                     <td className="px-6 py-4 align-top">
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium">{res.type}</span>
+                        {res.notes && (
+                           <button onClick={() => handleSpeakNotes(res.notes || '')} className="text-xs flex items-center gap-1 text-slate-400 hover:text-primary-600">
+                              <Volume2 size={10}/> Notes
+                           </button>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 align-top">
