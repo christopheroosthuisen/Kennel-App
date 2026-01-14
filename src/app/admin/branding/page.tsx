@@ -80,13 +80,13 @@ export default function BrandSettingsPage() {
                     <div className="relative w-8 h-8 rounded-full border shadow-sm overflow-hidden">
                       <input 
                         type="color" 
-                        value={value} 
+                        value={value as string} 
                         onChange={(e) => handleColorChange(key as any, e.target.value)}
                         className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer p-0 border-0"
                       />
                     </div>
                     <Input 
-                      value={value} 
+                      value={value as string} 
                       onChange={(e) => handleColorChange(key as any, e.target.value)}
                       className="font-mono text-xs h-8"
                     />
