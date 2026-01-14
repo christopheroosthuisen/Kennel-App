@@ -29,7 +29,7 @@ const NavItem = ({ icon: Icon, label, path, collapsed, active }: { icon: any, la
   </Link>
 );
 
-export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.ReactNode, showAI: boolean, toggleAI: () => void }) => {
+export const AppLayout = ({ showAI, toggleAI }: { showAI: boolean, toggleAI: () => void }) => {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [quickNavOpen, setQuickNavOpen] = useState(false);
@@ -109,29 +109,16 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     }
   };
 
-  const startLiveSession = async () => {
-    if (isLiveActive) return;
-    setIsLiveActive(true);
-    setLiveStatus('connecting');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      // ... (Full implementation omitted for brevity, keeping existing structure)
-      setLiveStatus('connected');
-    } catch (e) {
-      console.error("Failed to start live session", e);
-      setIsLiveActive(false);
-      setLiveStatus('disconnected');
+  const toggleLiveSession = async () => {
+    // Placeholder logic for toggling live session
+    if (isLiveActive) {
+        setIsLiveActive(false);
+        setLiveStatus('disconnected');
+    } else {
+        setIsLiveActive(true);
+        setLiveStatus('connecting');
+        setTimeout(() => setLiveStatus('connected'), 1000);
     }
-  };
-
-  const stopLiveSession = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    setIsLiveActive(false);
-    setLiveStatus('disconnected');
   };
 
   const navItems = [

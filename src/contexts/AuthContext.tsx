@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetch, setToken, clearToken, getToken } from '../auth/auth';
 
@@ -24,35 +25,73 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  console.log("[AuthProvider] Mounting...");
+  
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Hydrate session on mount
+  // Hydrate session on mount with timeout failsafe
   useEffect(() => {
+    console.log("[AuthProvider] Hydration effect start");
+    let mounted = true;
+
     const hydrate = async () => {
       const token = getToken();
       if (!token) {
-        setIsLoading(false);
+        console.log("[AuthProvider] No token found, finishing load.");
+        if (mounted) setIsLoading(false);
         return;
       }
 
+      console.log("[AuthProvider] Token found, validating...");
+
+      // 8-second timeout to prevent infinite loading screens if API is hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Connection timed out")), 8000)
+      );
+
       try {
-        const res = await apiFetch<{ user: any }>('/api/auth/me');
-        if (res && res.user) {
-          setUser({ ...res.user, onboarded: true });
-        } else {
-          // Token might be valid format but user not found
-          clearToken();
+        const res: any = await Promise.race([
+          apiFetch<{ user: any }>('/api/auth/me'),
+          timeoutPromise
+        ]);
+
+        if (mounted) {
+          if (res && res.user) {
+            console.log("[AuthProvider] Hydration success:", res.user.email);
+            setUser({ ...res.user, onboarded: true });
+          } else {
+            // Valid JSON but no user? weird, clear token
+            console.warn("[AuthProvider] Valid response but no user object.");
+            clearToken();
+          }
         }
-      } catch (e) {
-        console.warn("Session hydration failed, clearing token.", e);
-        clearToken();
+      } catch (e: any) {
+        console.warn("[AuthProvider] Session hydration failed:", e);
+        if (mounted) {
+          if (e.message === 'Unauthorized' || e.status === 401) {
+            // Clean auth failure, just redirect to login
+            clearToken();
+            setUser(null);
+          } else {
+            // Network error or timeout - expose to UI
+            setError(e.message || "Failed to connect to server");
+            // We do NOT clear token here, effectively keeping the user "logged in" but in error state,
+            // or we can treat as logged out. For safety, let's treat as logged out but keep error visible.
+            // Actually, keep token so retry works.
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+            console.log("[AuthProvider] Hydration complete. Loading: false");
+            setIsLoading(false);
+        }
       }
     };
+
     hydrate();
+    return () => { mounted = false; };
   }, []);
 
   const login = async (email: string, pass: string) => {
@@ -75,6 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
+    console.log("[AuthProvider] Logging out");
     clearToken();
     setUser(null);
     // Best effort logout on server

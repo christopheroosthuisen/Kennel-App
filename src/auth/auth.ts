@@ -31,10 +31,17 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   }
 
   // Use relative path which goes through Vite proxy
-  const response = await fetch(path, {
-    ...options,
-    headers
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers
+    });
+  } catch (networkError) {
+    // Catch fetch network errors (e.g., API offline)
+    console.error("API Network Error:", networkError);
+    throw new Error("Network Error: API unreachable");
+  }
 
   if (response.status === 204) {
     return {} as T;
@@ -51,7 +58,8 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   if (!response.ok) {
     if (response.status === 401) {
       clearToken();
-      window.location.href = '/'; 
+      // Throw specialized error for AuthContext to catch
+      throw new Error("Unauthorized");
     }
     const error = new Error(data.error?.message || 'API Request Failed');
     (error as any).code = data.error?.code;

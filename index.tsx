@@ -1,3 +1,2 @@
-
-// This file is deprecated. Please use src/main.tsx.
-// See index.html script source.
+// This file is deprecated and should not be used.
+// Content cleared to prevent "CRITICAL" error loops.

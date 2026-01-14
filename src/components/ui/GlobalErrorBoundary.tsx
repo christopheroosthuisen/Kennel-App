@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { ErrorInfo, ReactNode } from "react";
+import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../Common";
 
@@ -13,9 +14,10 @@ interface State {
   error?: Error;
 }
 
-export class GlobalErrorBoundary extends React.Component<Props, State> {
+export class GlobalErrorBoundary extends Component<Props, State> {
+  // Explicitly declare state property to satisfy TypeScript in strict mode
   public state: State = {
-    hasError: false,
+    hasError: false
   };
 
   constructor(props: Props) {
@@ -53,7 +55,7 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  this.setState({ hasError: false });
+                  this.setState({ hasError: false, error: undefined });
                   window.location.reload();
                 }}
                 className="gap-2"

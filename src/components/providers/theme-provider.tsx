@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -13,18 +14,24 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  console.log("[ThemeProvider] Mounting...");
+  
   const [settings, setSettings] = useState<BrandSettings>(DEFAULT_THEME);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 1. Load from localStorage on mount
   useEffect(() => {
+    console.log("[ThemeProvider] Initializing from storage...");
     const saved = localStorage.getItem("brand_settings");
     if (saved) {
       try {
         setSettings({ ...DEFAULT_THEME, ...JSON.parse(saved) });
+        console.log("[ThemeProvider] Loaded saved settings");
       } catch (e) {
-        console.error("Failed to parse theme settings", e);
+        console.error("[ThemeProvider] Failed to parse theme settings", e);
       }
+    } else {
+        console.log("[ThemeProvider] No saved settings, using default");
     }
     setIsLoaded(true);
   }, []);
@@ -33,6 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
 
+    console.log("[ThemeProvider] Injecting CSS variables...");
     const root = document.documentElement;
     const { colors, radius, typography } = settings;
 
@@ -98,8 +106,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setSettings(DEFAULT_THEME);
   };
 
-  if (!isLoaded) return null; // Or a loader
+  if (!isLoaded) {
+    console.log("[ThemeProvider] Waiting for load...");
+    return null; // Or a loader
+  }
 
+  console.log("[ThemeProvider] Render children");
   return (
     <ThemeContext.Provider value={{ settings, updateSettings, resetTheme }}>
       {children}
