@@ -1,6 +1,6 @@
 
-import { WorkflowDefinition, TriggerType, WorkflowContext, Enrollment } from '@/types/automation';
-import { api } from '@/api/api'; 
+import { WorkflowDefinition, TriggerType, WorkflowContext, Enrollment } from '../types/automation';
+import { api } from '../api/api'; 
 
 // --- MOCK STORAGE FOR DEMO ---
 let activeEnrollments: Enrollment[] = [];
@@ -16,7 +16,7 @@ const getWorkflows = async (): Promise<WorkflowDefinition[]> => {
     isActive: w.isEnabled,
     trigger: w.triggerType as TriggerType,
     nodes: typeof w.steps === 'string' ? JSON.parse(w.steps) : w.steps || [],
-    edges: typeof w.edges === 'string' ? JSON.parse(w.edges) : [], // Assuming API returns edges now
+    edges: typeof w.edges === 'string' ? JSON.parse(w.edges) : [],
     stats: { runs: 0, completed: 0, failed: 0 }
   }));
 };
@@ -43,11 +43,9 @@ export const AutomationEngine = {
    * Enroll a user/entity into a workflow
    */
   async enroll(workflow: WorkflowDefinition, context: WorkflowContext) {
-    // Find Start Node (Trigger Node)
     const startNode = workflow.nodes.find(n => n.type === 'trigger');
     if (!startNode) return;
 
-    // Check Trigger Config Conditions (e.g. Min Amount)
     if (workflow.trigger === 'POS_PURCHASE') {
       const minAmount = startNode.data.config?.minAmount || 0;
       if ((context.data.amount || 0) < minAmount) {
@@ -69,7 +67,6 @@ export const AutomationEngine = {
     activeEnrollments.push(enrollment);
     console.log(`[Automation] Enrolled in "${workflow.name}"`);
     
-    // Start processing immediately
     await this.processEnrollment(enrollment, workflow);
   },
 
@@ -77,14 +74,12 @@ export const AutomationEngine = {
    * Process the queue recursively
    */
   async processEnrollment(enrollment: Enrollment, workflow: WorkflowDefinition) {
-    // Find current node
     const currentNode = workflow.nodes.find(n => n.id === enrollment.currentNodeId);
     if (!currentNode) {
       this.completeEnrollment(enrollment, 'COMPLETED');
       return;
     }
 
-    // Execute Action if it's an action node
     if (currentNode.type === 'action') {
       try {
         await this.executeAction(currentNode, enrollment.context);
@@ -95,7 +90,6 @@ export const AutomationEngine = {
       }
     }
 
-    // Handle Logic/Delay special cases
     if (currentNode.data.actionType === 'WAIT_DELAY') {
       const duration = (currentNode.data.config?.duration || 1) as number;
       const unit = currentNode.data.config?.unit || 'hours';
@@ -108,19 +102,14 @@ export const AutomationEngine = {
       enrollment.status = 'WAITING';
       enrollment.nextRunAt = new Date(Date.now() + ms).toISOString();
       console.log(`[Automation] Paused for ${duration} ${unit}`);
-      return; // Stop execution here, cron job would pick this up later
+      return; 
     }
 
-    // Find Next Node
-    // Logic nodes utilize handles "true" / "false"
-    // Standard nodes use default handle
-    const edges = workflow.edges || []; // Assume edges are passed in workflow def
-    const nextEdge = edges.find(e => e.source === currentNode.id); // Simple linear for now
+    const edges = workflow.edges || [];
+    const nextEdge = edges.find(e => e.source === currentNode.id);
 
     if (nextEdge) {
       enrollment.currentNodeId = nextEdge.target;
-      // Recursively process next step
-      // Add artificial delay for demo visualization
       setTimeout(() => this.processEnrollment(enrollment, workflow), 500); 
     } else {
       this.completeEnrollment(enrollment, 'COMPLETED');
@@ -131,14 +120,11 @@ export const AutomationEngine = {
     const type = node.data.actionType;
     console.log(`[Automation] Executing Action: ${type}`, node.data.config);
 
-    // Mock API calls
     if (type === 'SEND_SMS') {
-      // In real app: api.sendMessage(...)
       await new Promise(r => setTimeout(r, 200)); 
     }
     
     if (type === 'CREATE_TASK') {
-      // In real app: api.createTask(...)
       await new Promise(r => setTimeout(r, 200));
     }
   },
@@ -146,10 +132,8 @@ export const AutomationEngine = {
   completeEnrollment(enrollment: Enrollment, status: 'COMPLETED' | 'FAILED') {
     enrollment.status = status;
     console.log(`[Automation] Workflow ${status}: ${enrollment.id}`);
-    // In real app, update DB
   },
 
-  // --- Public Getters ---
   getActiveEnrollments(ownerId?: string) {
     if (ownerId) return activeEnrollments.filter(e => e.ownerId === ownerId);
     return activeEnrollments;

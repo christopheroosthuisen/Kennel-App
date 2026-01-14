@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetch, setToken, clearToken, getToken } from '../auth/auth';
 
 // Minimal User interface for Context
@@ -24,7 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: PropsWithChildren) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +39,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
       try {
         const res = await apiFetch<{ user: any }>('/api/auth/me');
-        setUser({ ...res.user, onboarded: true }); // Assume onboarded for now
+        if (res && res.user) {
+          setUser({ ...res.user, onboarded: true });
+        } else {
+          // Token might be valid format but user not found
+          clearToken();
+        }
       } catch (e) {
-        console.error("Session hydration failed", e);
+        console.warn("Session hydration failed, clearing token.", e);
         clearToken();
       } finally {
         setIsLoading(false);
@@ -63,7 +67,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setToken(res.token);
       setUser({ ...res.user, onboarded: true });
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      console.error("Login Error:", err);
+      setError(err.message || 'Login failed. Please check credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +77,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const logout = () => {
     clearToken();
     setUser(null);
-    apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    // Best effort logout on server
+    apiFetch('/api/auth/logout', { method: 'POST' }).catch(console.error);
   };
 
   const mockOrg = user ? { id: user.orgId, name: 'My Kennel' } : null;

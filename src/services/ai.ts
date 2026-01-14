@@ -1,8 +1,8 @@
-
 import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
 
-// Initialize the SDK
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Initialize the SDK using Vite env variable
+const apiKey = process.env.API_KEY || '';
+const ai = new GoogleGenAI({ apiKey });
 
 /**
  * 1. Chatbot & General Intelligence
@@ -47,6 +47,7 @@ export const chatWithGemini = async (
     };
   } catch (error) {
     console.error("Gemini Chat Error:", error);
+    // Return graceful fallback or rethrow
     throw error;
   }
 };
@@ -82,7 +83,6 @@ export const connectLiveSession = async (
  * 3. Image Generation (Nano Banana Pro)
  */
 export const generatePetAvatar = async (breed: string, color: string) => {
-  // Check for paid key if needed via aistudio shim, otherwise proceed
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
@@ -171,8 +171,8 @@ export const animatePetPhoto = async (base64Image: string) => {
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (videoUri) {
-      // Fetch the actual bytes using the API Key
-      const res = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
+      // Fetch the actual bytes using the API Key. Note: we use the key from init.
+      const res = await fetch(`${videoUri}&key=${apiKey}`);
       const blob = await res.blob();
       return URL.createObjectURL(blob);
     }
@@ -208,8 +208,6 @@ export const transcribeAudio = async (base64Audio: string) => {
  * 7. Video Understanding
  */
 export const analyzeVideo = async (file: File) => {
-  // Simple base64 conversion for demo.
-  // Note: Production apps should use the File API for uploads > 20MB.
   const base64 = await new Promise<string>((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve((e.target?.result as string).split(',')[1]);

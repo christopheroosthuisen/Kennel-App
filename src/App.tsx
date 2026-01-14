@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/Layout';
+import { GlobalErrorBoundary } from '@/components/ui/GlobalErrorBoundary';
 
 // Pages
 import { Dashboard } from '@/components/Dashboard';
@@ -23,17 +23,25 @@ import { Dog } from 'lucide-react';
 import { ReactFlowProvider } from '@xyflow/react'; 
 
 // Component to handle Auth state routing
-const AppContent = () => {
-  const { user, org, isLoading } = useAuth();
+const AppContent: React.FC = () => {
+  const { user, isLoading } = useAuth();
   const [showAI, setShowAI] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <div className="h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center text-white animate-bounce">
-          <Dog size={24} />
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 gap-6">
+        <div className="relative">
+          <div className="h-16 w-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/50 animate-bounce">
+            <Dog size={32} />
+          </div>
+          <div className="absolute -bottom-2 -right-2 h-6 w-6 bg-white rounded-full flex items-center justify-center animate-spin">
+            <div className="h-2 w-2 bg-indigo-600 rounded-full" />
+          </div>
         </div>
-        <div className="text-slate-400 font-medium text-sm animate-pulse">Loading Partners Ops...</div>
+        <div className="flex flex-col items-center gap-2">
+          <h2 className="text-white font-bold text-xl tracking-tight">Partners Ops</h2>
+          <div className="text-slate-400 font-medium text-sm">Initializing System...</div>
+        </div>
       </div>
     );
   }
@@ -44,7 +52,7 @@ const AppContent = () => {
   }
 
   // 2. Logged In, but No Organization (Needs Onboarding)
-  if (!user.onboarded || !org) {
+  if (!user.onboarded) {
     return <Onboarding />;
   }
 
@@ -90,11 +98,13 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <GlobalErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </GlobalErrorBoundary>
   );
 };
 

@@ -9,7 +9,7 @@ import { Card, Button, Select, Badge, cn, Modal, Label, Input, Textarea, Tabs } 
 import { EditReservationModal } from './EditModals';
 import { api } from '../api/api';
 import { useApiQuery } from '../hooks/useApiQuery';
-import { ReservationStatus, ServiceType } from '../../shared/domain';
+import { ReservationStatus, ServiceType } from '../types/domain';
 
 // --- Types & Mocks for Calendar ---
 
