@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Calendar, Search, Filter, Plus, MoreHorizontal, Check, User, Dog, 
   ChevronLeft, ChevronRight, Clock, AlertCircle, Edit2, DollarSign, Trash2, 
-  Mail, MessageSquare, Printer, FileText, Volume2
+  Mail, MessageSquare, Printer, FileText, Volume2, LayoutGrid, CheckCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Input, Select, Badge, Modal, Label, cn, SortableHeader, BulkActionBar } from './Common';
@@ -254,45 +254,165 @@ export const Reservations = () => {
 };
 
 const NewReservationModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  // Simplified for now, just creating a stub to verify API
+  const [step, setStep] = useState(1);
   const [petId, setPetId] = useState('');
   const [ownerId, setOwnerId] = useState('');
   const [startAt, setStartAt] = useState('');
   const [endAt, setEndAt] = useState('');
+  const [unitId, setUnitId] = useState('');
+  const [type, setType] = useState('Boarding');
   
   const { data: owners = [] } = useApiQuery('new-res-owners', () => api.getOwners());
   const { data: pets = [] } = useApiQuery('new-res-pets', () => api.getPets());
+  
+  // Availability check
+  const canCheckAvailability = startAt && endAt;
+  const { data: availability = [] } = useApiQuery(
+    canCheckAvailability ? `avail-${startAt}-${endAt}` : 'noop',
+    async () => canCheckAvailability ? api.getAvailability(startAt, endAt) : { data: [] },
+    [startAt, endAt]
+  );
 
   const handleCreate = async () => {
     if (!petId || !ownerId || !startAt || !endAt) return;
-    await api.createReservation({
-      petId, ownerId, startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString(), type: 'Boarding'
-    });
-    onClose();
+    
+    try {
+      // 1. Create Reservation
+      const res = await api.createReservation({
+        petId, ownerId, startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString(), type
+      });
+      
+      // 2. If Unit Selected, assign segment
+      if (unitId) {
+        await api.updateReservationSegments(res.data.id, [{
+          startAt: new Date(startAt).toISOString(),
+          endAt: new Date(endAt).toISOString(),
+          kennelUnitId: unitId
+        }]);
+      }
+      
+      onClose();
+    } catch(e) {
+      alert('Error creating reservation');
+    }
   };
 
+  const nextStep = () => setStep(s => s + 1);
+  const prevStep = () => setStep(s => s - 1);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="New Reservation" size="md">
-      <div className="space-y-4">
-        <div>
-          <Label>Owner</Label>
-          <Select value={ownerId} onChange={e => setOwnerId(e.target.value)}>
-            <option value="">Select Owner</option>
-            {owners.map(o => <option key={o.id} value={o.id}>{o.firstName} {o.lastName}</option>)}
-          </Select>
+    <Modal isOpen={isOpen} onClose={onClose} title="New Reservation" size="lg">
+      <div className="mb-6 px-4">
+        <div className="flex items-center justify-between relative">
+          <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-100 -z-10" />
+          {['Client', 'Dates', 'Unit', 'Confirm'].map((label, i) => {
+            const stepNum = i + 1;
+            const active = step >= stepNum;
+            return (
+              <div key={label} className="flex flex-col items-center gap-1 bg-white px-2">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", active ? "bg-primary-600 text-white" : "bg-slate-100 text-slate-400")}>
+                  {step > stepNum ? <Check size={16}/> : stepNum}
+                </div>
+                <span className="text-xs font-medium text-slate-600">{label}</span>
+              </div>
+            )
+          })}
         </div>
-        <div>
-          <Label>Pet</Label>
-          <Select value={petId} onChange={e => setPetId(e.target.value)}>
-            <option value="">Select Pet</option>
-            {pets.filter(p => !ownerId || p.ownerId === ownerId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Check In</Label><Input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} /></div>
-          <div><Label>Check Out</Label><Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} /></div>
-        </div>
-        <Button className="w-full mt-4" onClick={handleCreate}>Create Reservation</Button>
+      </div>
+
+      <div className="min-h-[350px] p-2">
+        {step === 1 && (
+          <div className="space-y-4 animate-in slide-in-from-right duration-300">
+            <div>
+              <Label>Owner</Label>
+              <Select value={ownerId} onChange={e => setOwnerId(e.target.value)} autoFocus>
+                <option value="">Select Owner</option>
+                {owners.map(o => <option key={o.id} value={o.id}>{o.firstName} {o.lastName}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Label>Pet</Label>
+              <Select value={petId} onChange={e => setPetId(e.target.value)} disabled={!ownerId}>
+                <option value="">Select Pet</option>
+                {pets.filter(p => !ownerId || p.ownerId === ownerId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Label>Service Type</Label>
+              <Select value={type} onChange={e => setType(e.target.value)}>
+                <option value="Boarding">Boarding</option>
+                <option value="Daycare">Daycare</option>
+                <option value="Grooming">Grooming</option>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6 animate-in slide-in-from-right duration-300">
+            <div className="grid grid-cols-2 gap-6">
+              <div><Label>Check In</Label><Input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} /></div>
+              <div><Label>Check Out</Label><Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} /></div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-100 text-sm text-blue-800">
+              <p>Standard check-in is after 2:00 PM. Check-out before 11:00 AM.</p>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4 animate-in slide-in-from-right duration-300 h-full flex flex-col">
+            <h3 className="font-bold text-slate-800">Select Unit</h3>
+            {!canCheckAvailability ? (
+              <div className="text-center py-10 text-slate-400">Select dates first to check availability.</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 overflow-y-auto max-h-[300px]">
+                {availability.map((item: any) => (
+                  <div 
+                    key={item.unit.id}
+                    onClick={() => item.available && setUnitId(item.unit.id)}
+                    className={cn(
+                      "p-3 rounded-lg border flex flex-col gap-1 cursor-pointer transition-all",
+                      unitId === item.unit.id ? "border-primary-500 bg-primary-50 ring-1 ring-primary-500" : "border-slate-200 hover:border-primary-300",
+                      !item.available && "opacity-50 cursor-not-allowed bg-slate-50"
+                    )}
+                  >
+                    <div className="font-bold text-sm text-slate-900">{item.unit.name}</div>
+                    <div className="text-xs text-slate-500">{item.unit.type} • {item.unit.size}</div>
+                    {!item.available && <Badge variant="danger" className="mt-1 w-fit">Conflict</Badge>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-6 animate-in slide-in-from-right duration-300">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+              <h3 className="font-bold text-lg mb-4 text-slate-900">Summary</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-slate-500">Client</span> <span className="font-medium">{owners.find(o => o.id === ownerId)?.firstName}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Pet</span> <span className="font-medium">{pets.find(p => p.id === petId)?.name}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Dates</span> <span className="font-medium">{new Date(startAt).toLocaleDateString()} - {new Date(endAt).toLocaleDateString()}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Unit</span> <span className="font-medium">{unitId ? 'Assigned' : 'Unassigned'}</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between pt-6 border-t border-slate-100 mt-auto">
+        <Button variant="ghost" onClick={step === 1 ? onClose : prevStep}>
+          {step === 1 ? 'Cancel' : 'Back'}
+        </Button>
+        {step < 4 ? (
+          <Button onClick={nextStep} disabled={(step === 1 && !petId) || (step === 2 && !startAt)}>
+            Next Step
+          </Button>
+        ) : (
+          <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Confirm Booking</Button>
+        )}
       </div>
     </Modal>
   );

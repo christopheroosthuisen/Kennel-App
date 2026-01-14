@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, Button, Badge, Modal, cn } from '../Common';
 import { UserLedger, MembershipDefinition, PackageDefinition } from '../../types/loyalty';
@@ -76,7 +75,7 @@ export const CustomerLoyaltyWallet = ({ ledger }: Props) => {
           <Card className="h-48 flex flex-col items-center justify-center text-slate-400 bg-slate-50 border-dashed">
             <Crown size={32} className="mb-2 opacity-50"/>
             <p>No Active Membership</p>
-            <Button variant="link" className="text-primary-600">View Plans</Button>
+            <Button variant="ghost" className="text-primary-600 hover:underline">View Plans</Button>
           </Card>
         )}
 

@@ -1,6 +1,5 @@
 
 const TOKEN_KEY = 'partners_ops_token';
-const API_BASE = 'http://localhost:8787';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -31,18 +30,28 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
     options.body = JSON.stringify(options.data);
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  // Use relative path which goes through Vite proxy
+  const response = await fetch(path, {
     ...options,
     headers
   });
 
-  const data = await response.json();
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    if (!response.ok) throw new Error(`Request failed: ${response.statusText}`);
+    return {} as T;
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
       clearToken();
-      // Optional: Trigger global event or redirect if needed, 
-      // but usually Context handles the state change on next check.
+      window.location.href = '/'; 
     }
     const error = new Error(data.error?.message || 'API Request Failed');
     (error as any).code = data.error?.code;

@@ -191,7 +191,9 @@ router.add('POST', '/api/users', requireAuth(admin.createUser));
 router.add('PATCH', '/api/users/:id', requireAuth(admin.updateUser));
 
 router.add('GET', '/api/workflows', requireAuth(workflows.listWorkflows));
+router.add('GET', '/api/workflows/:id', requireAuth(workflows.getWorkflow));
 router.add('POST', '/api/workflows', requireAuth(workflows.createWorkflow));
+router.add('PATCH', '/api/workflows/:id', requireAuth(workflows.updateWorkflow));
 router.add('GET', '/api/workflow-runs', requireAuth(workflows.listRuns));
 
 // --- SSE Event Stream ---

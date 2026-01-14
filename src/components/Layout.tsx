@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, Bell, Search, ShoppingCart, HelpCircle, LayoutDashboard, 
@@ -5,9 +6,9 @@ import {
   Sparkles, X, Mic, Send, MapPin, Globe, BrainCircuit, Zap, Link as LinkIcon, StopCircle, LogOut
 } from 'lucide-react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { cn, Button, Input, Badge } from './Common';
+import { cn, Button, Input, Badge, Avatar } from './Common';
 import { api } from '../api/api';
-import { useAuth } from '../contexts/AuthContext'; // Updated import
+import { useAuth } from '../contexts/AuthContext';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useEventStream } from '../hooks/useEventStream';
 import { chatWithGemini, connectLiveSession } from '../services/ai';
@@ -104,7 +105,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     if (e.key === 'Enter') {
       const term = e.currentTarget.value;
       setQuickNavOpen(false);
-      navigate(`/owners?search=${term}`);
+      navigate(`/owners-pets?search=${term}`);
     }
   };
 
@@ -138,7 +139,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     { icon: Calendar, label: 'Reservations', path: '/reservations' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: CreditCard, label: 'Point of Sale', path: '/pos' },
-    { icon: Dog, label: 'Owners & Pets', path: '/owners' }, // Fixed path
+    { icon: Dog, label: 'Owners & Pets', path: '/owners-pets' },
     { icon: FileText, label: 'Report Cards', path: '/report-cards' },
     { icon: FileText, label: 'Reports', path: '/reports' },
     { icon: Settings, label: 'Admin', path: '/admin' },
@@ -166,7 +167,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
               <NavItem 
                 {...item} 
                 collapsed={collapsed} 
-                active={location.pathname === item.path} 
+                active={location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))} 
               />
             </React.Fragment>
           ))}
@@ -181,10 +182,8 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                     onClick={() => setSelectedPetId(pet.id)}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-slate-800 text-left group"
                   >
-                    <div className="relative">
-                      <div className="h-8 w-8 rounded-full bg-slate-700 overflow-hidden ring-2 ring-transparent group-hover:ring-primary-500 transition-all">
-                        <img src={pet.photoUrl || `https://ui-avatars.com/api/?name=${pet.name}&background=random`} alt={pet.name} className="h-full w-full object-cover" />
-                      </div>
+                    <div className="relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-transparent group-hover:ring-primary-500 transition-all">
+                      <Avatar url={pet.photoUrl} name={pet.name} className="bg-slate-700 text-slate-300 text-xs" />
                     </div>
                     <div className="overflow-hidden">
                       <div className="text-sm font-medium text-slate-300 group-hover:text-white truncate">{pet.name}</div>
@@ -257,8 +256,8 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
              </Button>
 
              <div className="ml-2 flex items-center gap-3 pl-3 border-l border-slate-200 cursor-pointer">
-                <div className="h-9 w-9 bg-slate-800 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                  {user?.name?.charAt(0) || 'U'}
+                <div className="h-9 w-9 bg-slate-800 rounded-full flex items-center justify-center text-white font-medium text-sm overflow-hidden">
+                  <Avatar name={user?.name || 'User'} className="bg-slate-800 text-white w-full h-full text-xs" />
                 </div>
              </div>
            </div>
@@ -287,7 +286,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
           <Button variant="ghost" size="icon" onClick={toggleAI}><X size={18} /></Button>
         </div>
         
-        {/* ... (Keep AI Chat UI) ... */}
         <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
            <p>AI Chat Interface Placeholder</p>
         </div>
@@ -308,7 +306,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                />
                <span className="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-100 rounded">ESC</span>
              </div>
-             {/* ... Quick actions list ... */}
           </div>
         </div>
       )}

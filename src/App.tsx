@@ -1,23 +1,24 @@
 
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AppLayout } from './components/Layout';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AppLayout } from '@/components/Layout';
 
 // Pages
-import { Dashboard } from './components/Dashboard';
-import { Reservations } from './components/Reservations';
-import { CalendarView } from './components/Calendar';
-import { POS } from './components/POS';
-import { Profiles } from './components/Profiles';
-import { ReportCards } from './components/ReportCards';
-import { Reports } from './components/Reports';
-import { Admin } from './components/Admin';
-import { Automations } from './components/Automations';
-import { Notifications } from './components/Notifications';
-import { Auth } from './pages/Auth';
-import { Onboarding } from './pages/Onboarding';
-import { AutomationBuilder } from './pages/AutomationBuilder'; 
+import { Dashboard } from '@/components/Dashboard';
+import { Reservations } from '@/components/Reservations';
+import { CalendarView } from '@/components/Calendar';
+import { POS } from '@/components/POS';
+import { Profiles } from '@/components/Profiles';
+import { ReportCards } from '@/components/ReportCards';
+import { Reports } from '@/components/Reports';
+import { Admin } from '@/components/Admin';
+import { Automations } from '@/components/Automations';
+import { Notifications } from '@/components/Notifications';
+import { Auth } from '@/pages/Auth';
+import { Onboarding } from '@/pages/Onboarding';
+import { AutomationBuilder } from '@/pages/AutomationBuilder'; 
+import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Dog } from 'lucide-react';
 import { ReactFlowProvider } from '@xyflow/react'; 
 
@@ -89,9 +90,11 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

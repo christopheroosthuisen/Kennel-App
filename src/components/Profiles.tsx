@@ -6,7 +6,7 @@ import {
   Paperclip, Send, Camera, Sparkles, Image as ImageIcon, Video, Map, DollarSign, Calendar, File
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
+import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader, Avatar } from './Common';
 import { EditOwnerModal, EditPetModal } from './EditModals';
 import { NewReservationModal, SendEstimateModal } from './QuickActionModals';
 import { api } from '../api/api';
@@ -15,7 +15,6 @@ import { uploadFile, fileToBase64 } from '../utils/files';
 import { chatWithGemini, generatePetAvatar, editImage, animatePetPhoto, analyzeDocument } from '../services/ai';
 import { CRMCommunicationHub } from './CRMCommunicationHub';
 
-// ... (Keep existing useDebounce hook) ...
 function useDebounce(value: string, delay: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   React.useEffect(() => {
@@ -190,8 +189,8 @@ export const Profiles = () => {
                          if ((e.target as HTMLElement).tagName !== 'INPUT') updateParams({ id: pet.id });
                       }}
                     >
-                      <div className="h-16 w-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xl overflow-hidden">
-                        {pet.photoUrl ? <img src={pet.photoUrl} className="w-full h-full object-cover" /> : pet.name.charAt(0)}
+                      <div className="h-16 w-16 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                        <Avatar url={pet.photoUrl} name={pet.name} className="h-full w-full text-lg" />
                       </div>
                       <div>
                         <div className="font-bold text-lg text-slate-900 group-hover:text-primary-600 transition-colors">{pet.name}</div>
@@ -232,13 +231,9 @@ export const Profiles = () => {
   );
 };
 
-// --- Updated Owner Detail ---
-
 const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const { data: owner } = useApiQuery(`owner-${id}`, () => api.getOwner(id));
   const { data: pets = [] } = useApiQuery(`pets-${id}`, () => api.getPets({ ownerId: id }));
-  
-  // Tabs Data
   const { data: agreements = [], refetch: refetchAgreements } = useApiQuery(`agr-${id}`, () => api.listAgreements(id));
   const { data: files = [], refetch: refetchFiles } = useApiQuery(`files-${id}`, () => api.listAttachments('Owner', id));
   const { data: invoices = [] } = useApiQuery(`inv-${id}`, () => api.listOwnerInvoices(id));
@@ -253,9 +248,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const verifyAddress = async () => {
     setIsVerifyingAddr(true);
     try {
-      // Maps Grounding Check
       const res = await chatWithGemini([], `Is the address "${owner.address}" valid and residential?`, 'maps');
-      // In a real app, we'd parse the structured grounding data, but text is fine for a quick check.
       alert(`Maps Grounding Check:\n${res.text}`);
     } catch(e) { 
       alert('Verification failed. Check API configuration.'); 
@@ -285,8 +278,8 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
       <Card className="p-6">
         <div className="flex justify-between items-start">
            <div className="flex gap-4">
-              <div className="h-16 w-16 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                 {owner.firstName[0]}{owner.lastName[0]}
+              <div className="h-16 w-16 rounded-full overflow-hidden shrink-0">
+                 <Avatar name={`${owner.firstName} ${owner.lastName}`} className="h-full w-full text-xl bg-primary-100 text-primary-600" />
               </div>
               <div>
                  <h1 className="text-3xl font-bold text-slate-900">{owner.firstName} {owner.lastName}</h1>
@@ -337,7 +330,9 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                   <h3 className="font-bold text-slate-900 flex items-center gap-2"><Dog size={18}/> Household Pets</h3>
                   {pets.map((pet: any) => (
                     <div key={pet.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group transition-colors border border-transparent hover:border-slate-100">
-                      <img src={pet.photoUrl || `https://ui-avatars.com/api/?name=${pet.name}&background=random`} className="h-10 w-10 rounded-full object-cover" alt="" />
+                      <div className="h-10 w-10 rounded-full overflow-hidden shrink-0">
+                        <Avatar url={pet.photoUrl} name={pet.name} className="h-full w-full" />
+                      </div>
                       <div>
                          <div className="font-semibold text-slate-800 group-hover:text-primary-600">{pet.name}</div>
                          <div className="text-xs text-slate-500">{pet.breed}</div>
@@ -450,8 +445,6 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   );
 };
 
-// --- Updated Pet Detail ---
-
 const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const { data: pet, refetch } = useApiQuery(`pet-${id}`, () => api.getPet(id));
   const [tab, setTab] = useState('care');
@@ -505,7 +498,6 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
     setIsAnimating(true);
     try {
       const base64Input = pet.photoUrl.includes(',') ? pet.photoUrl.split(',')[1] : pet.photoUrl;
-      // Note: Veo requires a specific process flow
       const videoUrl = await animatePetPhoto(base64Input);
       if (videoUrl) {
         window.open(videoUrl, '_blank');
@@ -538,14 +530,12 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
       {/* Pet Header */}
       <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6 items-start">
          <div className="relative group w-48 shrink-0">
-            <div className="h-48 w-48 rounded-lg bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
-               {pet.photoUrl ? (
-                 <img src={pet.photoUrl} className="w-full h-full object-cover" />
-               ) : (
-                 <div className="text-center p-4">
-                    <div className="text-4xl font-bold text-slate-400 mb-2">{pet.name[0]}</div>
-                    <Button size="sm" variant="ghost" onClick={handleGenerateAvatar} disabled={isGeneratingImg} className="text-xs">
-                       {isGeneratingImg ? <Sparkles size={12} className="animate-spin"/> : <Sparkles size={12}/>} Generate AI Avatar
+            <div className="h-48 w-48 rounded-lg bg-slate-200 overflow-hidden border border-slate-300">
+               <Avatar url={pet.photoUrl} name={pet.name} className="w-full h-full text-4xl" />
+               {!pet.photoUrl && (
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <Button size="sm" variant="ghost" onClick={handleGenerateAvatar} disabled={isGeneratingImg} className="text-xs pointer-events-auto mt-16 bg-white/80">
+                       {isGeneratingImg ? <Sparkles size={12} className="animate-spin"/> : <Sparkles size={12}/>} Generate AI
                     </Button>
                  </div>
                )}

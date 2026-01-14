@@ -29,8 +29,8 @@ export const Notifications = () => {
   // Real data
   const { data: notifications = [], refetch } = useApiQuery('notifs', () => api.listNotifications({ unreadOnly: activeFilter === 'unread' }), [activeFilter]);
   
-  // Real comments for selected
-  const { data: comments = [], refetch: refetchComments } = useApiQuery(
+  // Real comments for selected with Type
+  const { data: comments = [], refetch: refetchComments } = useApiQuery<NotificationComment[]>(
     selectedId ? `comments-${selectedId}` : 'noop',
     async () => selectedId ? api.listNotificationComments(selectedId) : { data: [] },
     [selectedId]

@@ -1,6 +1,6 @@
 
-import { WorkflowDefinition, TriggerType, WorkflowContext, Enrollment } from '../types/automation';
-import { api } from '../api/api'; 
+import { WorkflowDefinition, TriggerType, WorkflowContext, Enrollment } from '@/types/automation';
+import { api } from '@/api/api'; 
 
 // --- MOCK STORAGE FOR DEMO ---
 let activeEnrollments: Enrollment[] = [];

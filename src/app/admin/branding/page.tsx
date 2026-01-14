@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { useTheme } from "../../../components/providers/theme-provider";
-import { Button, Input, Label, Slider, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator, Select } from "../../../components/Common";
+import { useTheme } from "@/components/providers/theme-provider";
+import { Button, Input, Label, Slider, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator, Select } from "@/components/Common";
 import { Loader2, Save, LayoutDashboard, Calendar, Users, Settings } from "lucide-react";
-import { PRESETS, DEFAULT_THEME } from "../../../lib/theme-utils";
-import { updateBrandSettings } from "../../../store/actions/crm-interactions";
-import { ThemePreset } from "../../../types/theme";
+import { PRESETS, DEFAULT_THEME } from "@/lib/theme-utils";
+import { updateBrandSettings } from "@/store/actions/crm-interactions";
+import { ThemePreset } from "@/types/theme";
 
 const FONT_OPTIONS = ["Inter", "Roboto", "Open Sans", "Lato", "Playfair Display", "Montserrat"];
 

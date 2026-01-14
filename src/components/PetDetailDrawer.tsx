@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, Upload, FileText, Scissors, Droplet, Activity, Calendar, ShieldAlert } from 'lucide-react';
 import { Pet, Vaccination } from '../../shared/domain';
-import { Button, cn, Card } from './Common';
+import { Button, cn, Card, Avatar } from './Common';
 import { api } from '../api/api';
 import { uploadFile } from '../utils/files';
 
@@ -24,7 +24,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
   const dobDate = pet.dob ? new Date(pet.dob) : new Date();
   const age = new Date().getFullYear() - dobDate.getFullYear();
 
-  // Helper to determine vaccine row status
   const getVaccineStatus = (expiryDate: string) => {
     const today = new Date();
     const expiry = new Date(expiryDate);
@@ -43,12 +42,10 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
       const file = e.target.files[0];
       const uploaded = await uploadFile(file);
       
-      // Create a new vaccination record linked to this file
-      // In a real app, AI would extract this data first. For now, we create a placeholder entry.
       const newVax: Partial<Vaccination> = {
         name: 'Pending Verification',
         dateAdministered: new Date().toISOString(),
-        dateExpires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Dummy expiry
+        dateExpires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         fileId: uploaded.id
       };
 
@@ -67,7 +64,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
 
   return (
     <>
-      {/* Backdrop */}
       <div 
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300",
@@ -76,19 +72,17 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
         onClick={onClose}
       />
 
-      {/* Drawer */}
       <div 
         className={cn(
           "fixed top-0 right-0 h-full w-full max-w-xl bg-slate-50 z-50 shadow-2xl transform transition-transform duration-300 ease-out flex flex-col",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        {/* Header / Hero */}
-        <div className="relative h-64 shrink-0 bg-slate-900">
-          <img 
-            src={pet.photoUrl || `https://ui-avatars.com/api/?name=${pet.name}&background=random`} 
-            alt={pet.name} 
-            className="w-full h-full object-cover opacity-90"
+        <div className="relative h-64 shrink-0 bg-slate-900 overflow-hidden">
+          <Avatar 
+            url={pet.photoUrl} 
+            name={pet.name} 
+            className="w-full h-full opacity-90 text-6xl text-slate-700 bg-slate-800" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90" />
           
@@ -109,7 +103,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
             <p className="text-slate-300 font-medium text-lg">{pet.breed}</p>
           </div>
 
-          {/* Warning Banner */}
           {isAggressive && (
             <div className="absolute top-0 left-0 w-full bg-red-600/90 text-white px-6 py-3 flex items-center justify-center gap-2 font-bold uppercase tracking-widest shadow-lg animate-pulse">
               <ShieldAlert size={20} />
@@ -118,10 +111,8 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
           )}
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           
-          {/* Vitals Grid */}
           <div className="grid grid-cols-4 gap-4">
             <Card className="p-3 flex flex-col items-center justify-center text-center border-slate-200 shadow-sm">
               <span className="text-xs font-bold text-slate-400 uppercase mb-1">Age</span>
@@ -137,7 +128,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
             </Card>
           </div>
 
-          {/* Medical Dashboard */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -194,7 +184,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
             </Card>
           </section>
 
-          {/* Grooming & Handling */}
           <section>
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
               <Scissors className="text-purple-500" size={20} /> Grooming & Handling
@@ -206,7 +195,6 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
                     <Scissors size={12}/> Blade Settings
                   </div>
                   <div className="text-slate-800 font-medium">
-                    {/* Placeholder for specific grooming fields if added to schema later */}
                     #7F Body, #10 Belly
                   </div>
                 </div>
@@ -228,11 +216,9 @@ export const PetDetailDrawer = ({ isOpen, onClose, pet, onUpdate }: PetDetailDra
             </Card>
           </section>
 
-          {/* Quick Actions Footer Space */}
           <div className="h-12" /> 
         </div>
 
-        {/* Footer Actions */}
         <div className="p-4 border-t border-slate-200 bg-white flex gap-3 shrink-0">
           <Button variant="outline" className="flex-1 gap-2 border-slate-300">
             <FileText size={16} /> Full Profile

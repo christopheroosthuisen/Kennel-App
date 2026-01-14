@@ -1,9 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
-import { PlatinumEngine } from '../../lib/platinum-engine';
+import { api } from '../../api/api';
 import { Search, Plus, Filter, Phone, Mail, Dog } from 'lucide-react';
 
-// Interface matching PlatinumEngine mock data
 interface Owner {
   id: string;
   name: string;
@@ -29,9 +28,28 @@ const OwnersDirectoryPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await PlatinumEngine.getOwners();
-        // The mock engine returns data directly, but in real world might need .data property
-        setOwners(data as any); 
+        const { data: ownersData } = await api.getOwners();
+        const { data: petsData } = await api.getPets();
+        
+        // Merge pets into owners for this view
+        const merged: Owner[] = ownersData.map((owner: any) => ({
+          id: owner.id,
+          name: owner.name || `${owner.firstName} ${owner.lastName}`,
+          email: owner.email,
+          phone: owner.phone,
+          status: 'Active', 
+          balance: (owner.balance || 0) / 100, 
+          avatar: `https://ui-avatars.com/api/?name=${owner.firstName}+${owner.lastName}&background=random`, 
+          pets: petsData.filter((p: any) => p.ownerId === owner.id).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            breed: p.breed,
+            status: 'Active', 
+            avatar: p.photoUrl || `https://ui-avatars.com/api/?name=${p.name}&background=random`
+          }))
+        }));
+        
+        setOwners(merged); 
       } catch (e) {
         console.error("Failed to load owners", e);
       } finally {

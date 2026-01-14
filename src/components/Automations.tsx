@@ -7,7 +7,7 @@ import {
   GitCommit, RefreshCw, LayoutTemplate, Copy
 } from 'lucide-react';
 import { Card, Button, Input, Select, Badge, Modal, Label, Tabs, Switch, cn } from './Common';
-import { Workflow, WorkflowStep } from '../../shared/domain';
+import { Workflow, WorkflowStep } from '../types/domain';
 import { api } from '../api/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 

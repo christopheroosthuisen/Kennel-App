@@ -13,6 +13,8 @@ import { formatMoney } from '../shared/utils';
 import { PaymentModal } from './pos/PaymentModal';
 import { ShiftManager } from './pos/ShiftManager';
 import { cn } from './Common';
+import { api } from '../api/api';
+import { PaymentMethod } from '../types/retail';
 
 export const POS = () => {
   const { 
@@ -41,6 +43,30 @@ export const POS = () => {
   const handleCheckout = () => {
     if (cart.length === 0) return;
     setIsPaymentOpen(true);
+  };
+
+  const handlePaymentProcess = async (payments: PaymentMethod[]) => {
+    // For POS we usually just take the first payment or handle multi-tender in backend
+    // Simplified: Take first payment details for the API call which expects single payment object for now
+    const primaryPayment = payments[0]; 
+    if (!primaryPayment) return;
+
+    try {
+        await api.posCheckout({
+            ownerId: activeCustomer?.id,
+            items: cart.map(c => ({ catalogItemId: c.item.id, quantity: c.qty })),
+            payment: { 
+                method: primaryPayment.type === 'CARD' ? 'CreditCard' : 'Cash', 
+                amountCents: total 
+            }
+        });
+        clearCart();
+        setIsPaymentOpen(false);
+        alert('Transaction Complete');
+    } catch (e) {
+        alert('Transaction Failed');
+        throw e;
+    }
   };
 
   // Helper to find applicable credit for an item
@@ -309,6 +335,7 @@ export const POS = () => {
         isOpen={isPaymentOpen} 
         onClose={() => setIsPaymentOpen(false)} 
         totalDue={total}
+        onProcessPayment={handlePaymentProcess}
       />
     </div>
   );

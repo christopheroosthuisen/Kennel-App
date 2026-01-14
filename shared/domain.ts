@@ -144,7 +144,7 @@ export interface CreditBalance extends BaseEntity {
   ownerId: ID;
   packageDefinitionId: ID;
   serviceCategory: string;
-  remaining: number;
+  remaining: number; // Hours or Units
   isHourly: boolean;
   expiresAt: ISODate;
 }
@@ -374,7 +374,8 @@ export interface Workflow extends BaseEntity {
   name: string;
   triggerType: string;
   triggerConfig: string; 
-  steps: string; // JSON string
+  steps: string; // JSON string of nodes
+  edges: string; // JSON string of edges
   isEnabled: boolean;
 }
 

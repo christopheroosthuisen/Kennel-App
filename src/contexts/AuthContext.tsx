@@ -1,21 +1,21 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, PropsWithChildren } from 'react';
-import { PlatinumEngine } from '../lib/platinum-engine';
+import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
+import { apiFetch, setToken, clearToken, getToken } from '../auth/auth';
 
-// Define User shape to match PlatinumEngine + App requirements
+// Minimal User interface for Context
 export interface User {
   id: string;
   name: string;
   email: string;
   role: string;
-  avatar: string;
-  token: string;
-  onboarded?: boolean; // Required by App.tsx logic
+  onboarded: boolean;
+  avatar?: string;
+  orgId: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  org: any | null; // Mocked for App compatibility
+  org: any | null; 
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
@@ -29,55 +29,53 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Restore Session on Mount
+  // Hydrate session on mount
   useEffect(() => {
-    const restoreSession = async () => {
-      const storedUser = localStorage.getItem('platinum_user');
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        } catch (e) {
-          console.error("Failed to parse session", e);
-          localStorage.removeItem('platinum_user');
-        }
+    const hydrate = async () => {
+      const token = getToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        const res = await apiFetch<{ user: any }>('/api/auth/me');
+        setUser({ ...res.user, onboarded: true }); // Assume onboarded for now
+      } catch (e) {
+        console.error("Session hydration failed", e);
+        clearToken();
+      } finally {
+        setIsLoading(false);
+      }
     };
-    restoreSession();
+    hydrate();
   }, []);
 
-  // 2. Login Logic
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await PlatinumEngine.login(email, pass);
+      const res = await apiFetch<{ token: string, user: any }>('/api/auth/login', {
+        method: 'POST',
+        data: { email, password: pass }
+      });
       
-      if (result.success && result.user) {
-        // Inject 'onboarded: true' to ensure the user bypasses the onboarding screen
-        const sessionUser = { ...result.user, onboarded: true };
-        
-        setUser(sessionUser);
-        localStorage.setItem('platinum_user', JSON.stringify(sessionUser));
-      } else {
-        setError(result.message || 'Invalid credentials');
-      }
-    } catch (err) {
-      setError('An unexpected network error occurred.');
+      setToken(res.token);
+      setUser({ ...res.user, onboarded: true });
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 3. Logout Logic
   const logout = () => {
+    clearToken();
     setUser(null);
-    localStorage.removeItem('platinum_user');
+    apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   };
 
-  // Mock Org object to satisfy App.tsx requirements without a full Org fetch
-  const mockOrg = user ? { id: 'org-1', name: 'Platinum Kennel' } : null;
+  const mockOrg = user ? { id: user.orgId, name: 'My Kennel' } : null;
 
   return (
     <AuthContext.Provider value={{
@@ -95,8 +93,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
