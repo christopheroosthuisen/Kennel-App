@@ -10,7 +10,7 @@ import { Save, ArrowLeft, Plus, Zap, PlayCircle, GitBranch, Settings, Clock, Che
 import { Button, cn } from '../components/Common';
 import { TriggerNode, ActionNode, LogicNode } from '../components/automations/CustomNodes';
 import { NodeConfigPanel } from '../components/automations/NodeConfigPanel';
-import { WorkflowNode } from '../../types/automation';
+import { WorkflowNode } from '../types/automation';
 import { api } from '../api/api';
 
 const nodeTypes = {

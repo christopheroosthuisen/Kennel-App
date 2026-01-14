@@ -1,3 +1,4 @@
+
 import { PlatinumEngine } from '../lib/platinum-engine';
 
 // This file now acts as an Adapter/Bridge. 
@@ -96,7 +97,16 @@ export const api = {
   },
 
   // --- Notifications ---
-  listNotifications: async (params?: any) => mockRes(await PlatinumEngine.getNotifications()),
+  listNotifications: async (params?: any) => {
+    const raw = await PlatinumEngine.getNotifications();
+    // Transform legacy mock to domain shape expected by UI
+    const data = raw.map((n: any) => ({
+      ...n,
+      createdAt: n.timestamp, // Map timestamp to createdAt if needed
+      readByUserIds: n.read ? ['current-user'] : [], // Mock mapping for read status
+    }));
+    return mockRes(data);
+  },
   markNotificationRead: async (id: string) => mockRes({}),
   listNotificationComments: async (id: string) => mockRes([]),
   createNotificationComment: async (id: string, text: string) => mockRes({ id: 'c1', text, userName: 'Me', timestamp: new Date().toISOString() }),

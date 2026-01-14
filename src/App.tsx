@@ -71,7 +71,7 @@ const AppContent = () => {
                 <Route path="/reservations" element={<Reservations />} />
                 <Route path="/calendar" element={<CalendarView />} />
                 <Route path="/pos" element={<POS />} />
-                <Route path="/owners-pets" element={<Profiles />} />
+                <Route path="/owners" element={<Profiles />} />
                 <Route path="/automations" element={<Automations />} />
                 <Route path="/report-cards" element={<ReportCards />} />
                 <Route path="/reports" element={<Reports />} />
