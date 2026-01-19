@@ -64,6 +64,7 @@ export interface Pet {
   vet: string;
   feedingInstructions: string;
   behaviorNotes?: string;
+  activeProgram?: string; // e.g., "Puppy Jump Start"
 }
 
 export interface Vaccine {
@@ -196,12 +197,15 @@ export interface PricingRule {
   enabled: boolean;
 }
 
-export interface EmailTemplate {
+export interface CommunicationTemplate {
   id: string;
   name: string;
-  subject: string;
+  type: 'Email' | 'SMS';
+  category: 'Reservation' | 'Financial' | 'Health' | 'Operations' | 'Marketing';
+  subject?: string; // Only for email
   body: string;
-  trigger: 'ReservationRequested' | 'ReservationConfirmed' | 'CheckOut' | 'VaccineExpired';
+  trigger: string; // Description of event
+  active: boolean;
 }
 
 export interface TaxRate {
@@ -437,4 +441,79 @@ export interface CareTask {
   warning?: boolean; // Allergy or high risk
   assignedTo?: string;
   completedAt?: string;
+}
+
+// --- Marketing Types ---
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  type: 'Email' | 'SMS';
+  status: 'Draft' | 'Scheduled' | 'Sent' | 'Sending';
+  sentCount: number;
+  openRate?: number;
+  clickRate?: number;
+  scheduledFor?: string;
+  createdAt: string;
+  audience: string; // e.g., "All Owners", "Expired Vax"
+}
+
+export interface CallLog {
+  id: string;
+  direction: 'Inbound' | 'Outbound';
+  from: string;
+  to: string;
+  durationSeconds: number;
+  timestamp: string;
+  status: 'Answered' | 'Missed' | 'Voicemail';
+  recordingUrl?: string;
+  relatedOwnerId?: string;
+}
+
+export interface MarketingConnector {
+  id: string;
+  provider: 'Twilio' | 'SendGrid' | 'Mailgun' | 'Postmark';
+  type: 'SMS' | 'Email' | 'Voice';
+  status: 'Connected' | 'Disconnected' | 'Error';
+  apiKeyMasked: string;
+  phoneNumber?: string;
+}
+
+export interface ReportDefinition {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  columns: string[];
+}
+
+// --- Service Dashboard Types ---
+
+export type ServiceDepartment = 'Grooming' | 'Training' | 'Enrichment' | 'Medical';
+
+export interface ServiceTask {
+  id: string;
+  reservationId: string;
+  petId: string;
+  department: ServiceDepartment;
+  name: string; // "Exit Bath", "Puppy 1-on-1"
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Skipped';
+  scheduledTime: string; // ISO
+  durationMinutes: number;
+  assignedTo?: string; // User ID
+  notes?: string;
+  programName?: string; // For training programs
+}
+
+// --- AI Agent Types ---
+
+export interface AiAgent {
+  id: string;
+  name: string;
+  description: string;
+  icon: any; // Lucide icon
+  category: 'Operations' | 'Marketing' | 'Admin' | 'Sales';
+  status: 'Idle' | 'Running' | 'Completed' | 'Failed';
+  lastRun?: string;
+  actionButtonText: string;
 }

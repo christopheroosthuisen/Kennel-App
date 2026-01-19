@@ -1,15 +1,17 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Menu, Bell, Search, ShoppingCart, HelpCircle, User, LayoutDashboard, 
   Calendar, Dog, CreditCard, FileText, Settings, ChevronLeft, ChevronRight, 
   Sparkles, X, Plus, LogOut, Command, GitBranch, MessageSquare,
   Layers, Users, PieChart, ChevronDown, CalendarRange, BarChart3, Briefcase, Clock,
-  ArrowRight, GraduationCap, MessageCircle, HeartPulse
+  ArrowRight, GraduationCap, MessageCircle, HeartPulse, Megaphone,
+  CheckSquare, Play, Bot, Terminal
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { cn, Button, Input, Badge } from './Common';
-import { MOCK_NOTIFICATIONS, MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_CHANNELS } from '../constants';
+import { cn, Button, Input, Badge, Tabs, Card } from './Common';
+import { MOCK_NOTIFICATIONS, MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_CHANNELS, MOCK_AGENTS } from '../constants';
+import { AiAgent } from '../types';
 
 // --- Menu Configuration ---
 
@@ -30,6 +32,7 @@ const MENU_ITEMS: NavItemConfig[] = [
     icon: Layers, 
     children: [
       { label: 'Care Dashboard', path: '/care', icon: HeartPulse },
+      { label: 'Service Tasks', path: '/services', icon: CheckSquare },
       { label: 'Reservations', path: '/reservations', icon: Calendar },
       { label: 'Facility Calendar', path: '/calendar', icon: CalendarRange },
       { label: 'Group Classes', path: '/classes', icon: GraduationCap },
@@ -44,6 +47,7 @@ const MENU_ITEMS: NavItemConfig[] = [
     children: [
       { label: 'Directory', path: '/owners-pets', icon: Dog },
       { label: 'Communication', path: '/messages', icon: MessageSquare },
+      { label: 'Marketing Hub', path: '/marketing', icon: Megaphone },
     ]
   },
   { 
@@ -68,8 +72,7 @@ const MENU_ITEMS: NavItemConfig[] = [
   },
 ];
 
-// --- Components ---
-
+// ... (Rest of NavLink and NavGroup - unchanged from previous version) ...
 const NavLink = ({ icon: Icon, label, path, collapsed, active, badge }: { icon: any, label: string, path: string, collapsed: boolean, active: boolean, badge?: number }) => (
   <Link 
     to={path}
@@ -102,9 +105,7 @@ const NavLink = ({ icon: Icon, label, path, collapsed, active, badge }: { icon: 
 );
 
 const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, collapsed: boolean, currentPath: string }) => {
-  // Check if any child is active to auto-expand or highlight
   const isChildActive = item.children?.some(child => {
-    // Handle query params in matching logic
     const childPathBase = child.path.split('?')[0];
     const currentPathBase = currentPath.split('?')[0];
     return currentPathBase === childPathBase || currentPathBase.startsWith(childPathBase);
@@ -113,13 +114,11 @@ const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, colla
   const [isOpen, setIsOpen] = useState(isChildActive);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Auto-expand if a child becomes active (e.g. navigation from elsewhere)
   useEffect(() => {
     if (isChildActive) setIsOpen(true);
   }, [isChildActive]);
 
   if (collapsed) {
-    // Collapsed Mode: Flyout Menu behavior
     return (
       <div 
         className="relative group"
@@ -135,7 +134,6 @@ const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, colla
           <item.icon size={20} />
         </button>
 
-        {/* Flyout Menu */}
         {isHovered && (
           <div className="absolute left-full top-0 ml-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-left-2 duration-150">
             <div className="px-3 py-1 mb-1 text-xs font-bold text-slate-500 uppercase tracking-wider">{item.label}</div>
@@ -164,7 +162,6 @@ const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, colla
     );
   }
 
-  // Expanded Mode: Accordion
   return (
     <div className="space-y-1">
       <button 
@@ -183,9 +180,7 @@ const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, colla
 
       {isOpen && (
         <div className="space-y-1 pl-4 relative animate-in slide-in-from-top-2 fade-in duration-200">
-          {/* Connector Line */}
           <div className="absolute left-[21px] top-0 bottom-2 w-px bg-slate-800" />
-          
           {item.children?.map(child => {
             const isActive = currentPath === child.path.split('?')[0];
             return (
@@ -200,7 +195,6 @@ const NavGroup = ({ item, collapsed, currentPath }: { item: NavItemConfig, colla
                 )}
               >
                 <div className="flex items-center gap-3">
-                   {/* Custom dot icon logic or just use text */}
                    <div className={cn("h-1.5 w-1.5 rounded-full transition-colors", isActive ? "bg-primary-500" : "bg-slate-600")} />
                    <span>{child.label}</span>
                 </div>
@@ -221,6 +215,13 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
   const location = useLocation();
   const navigate = useNavigate();
 
+  // AI Panel State
+  const [aiTab, setAiTab] = useState('chat');
+  const [runningAgent, setRunningAgent] = useState<string | null>(null);
+  const [agentLogs, setAgentLogs] = useState<string[]>([]);
+  const [agentResult, setAgentResult] = useState<React.ReactNode | null>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
   // Quick Nav Hotkey
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -236,37 +237,82 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Filter Logic for Quick Nav
+  // Auto-scroll logs
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [agentLogs]);
+
+  // Run Agent Simulation
+  const runAgent = (agent: AiAgent) => {
+    setRunningAgent(agent.id);
+    setAgentLogs([`Initializing ${agent.name}...`]);
+    setAgentResult(null);
+
+    const steps = [
+      "Accessing database...",
+      "Scanning records...",
+      "Analyzing patterns...",
+      "Drafting actions...",
+      "Finalizing results..."
+    ];
+
+    let stepIndex = 0;
+    const interval = setInterval(() => {
+      if (stepIndex < steps.length) {
+        setAgentLogs(prev => [...prev, `> ${steps[stepIndex]}`]);
+        stepIndex++;
+      } else {
+        clearInterval(interval);
+        setRunningAgent(null);
+        setAgentLogs(prev => [...prev, `> Task Complete.`]);
+        
+        // Mock Results based on Agent ID
+        if (agent.id === 'vac-agent') {
+           setAgentResult(
+              <div className="space-y-3">
+                 <div className="bg-amber-50 p-3 rounded border border-amber-100 text-xs">Found <strong>3 pets</strong> with expired vaccines in the next 7 days.</div>
+                 <div className="flex gap-2">
+                    <Button size="sm" className="w-full text-xs">Review List</Button>
+                    <Button size="sm" variant="outline" className="w-full text-xs">Send Emails</Button>
+                 </div>
+              </div>
+           );
+        } else if (agent.id === 'churn-agent') {
+           setAgentResult(
+              <div className="space-y-3">
+                 <div className="bg-blue-50 p-3 rounded border border-blue-100 text-xs">Identified <strong>12 clients</strong> absent for >90 days.</div>
+                 <Button size="sm" className="w-full text-xs">Draft Re-engagement Blast</Button>
+              </div>
+           );
+        } else {
+           setAgentResult(
+              <div className="p-3 bg-green-50 text-green-700 text-xs rounded border border-green-200">
+                 Action completed successfully. Report generated.
+              </div>
+           );
+        }
+      }
+    }, 800);
+  };
+
+  // Filter Logic for Quick Nav (Same as before)
   const searchResults = useMemo(() => {
     if (!searchTerm) return null;
     const term = searchTerm.toLowerCase();
-
-    // Pages
     const pages = MENU_ITEMS.flatMap(item => {
       const items = item.type === 'group' ? item.children || [] : [item];
       return items.filter(i => i.label.toLowerCase().includes(term));
     });
-
-    // Owners
     const owners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(term) || o.email.includes(term));
-
-    // Pets
     const pets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(term));
-
-    // Reservations
     const reservations = MOCK_RESERVATIONS.filter(r => {
-      const pet = MOCK_PETS.find(p => p.id === r.petId);
-      const owner = MOCK_OWNERS.find(o => o.id === r.ownerId);
-      return (
-        r.id.toLowerCase().includes(term) || 
-        pet?.name.toLowerCase().includes(term) ||
-        owner?.name.toLowerCase().includes(term)
-      );
+      const pet = MOCK_PETS.find(p => p?.id === r.petId);
+      const owner = MOCK_OWNERS.find(o => o?.id === r.ownerId);
+      return (r.id.toLowerCase().includes(term) || pet?.name.toLowerCase().includes(term) || owner?.name.toLowerCase().includes(term));
     });
-
-    // Internal Channels
     const channels = MOCK_CHANNELS.filter(c => c.name.toLowerCase().includes(term));
-
     return { pages, owners, pets, reservations, channels };
   }, [searchTerm]);
 
@@ -399,7 +445,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                 )}
              >
                <Sparkles size={16} className={showAI ? "fill-indigo-300 text-indigo-600" : "text-slate-400"} />
-               <span className="hidden sm:inline font-medium">AI Assistant</span>
+               <span className="hidden sm:inline font-medium">AI Ops</span>
              </Button>
 
              <div className="ml-2 flex items-center gap-3 pl-3 border-l border-slate-200 cursor-pointer" onClick={() => navigate('/owners-pets?id=o1&type=owners')}>
@@ -418,71 +464,122 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
         </main>
       </div>
 
-      {/* AI Assistant Panel (Right Side) */}
+      {/* AI Operations Center (Right Side) */}
       <div className={cn(
-        "fixed inset-y-0 right-0 w-[400px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-30 border-l border-slate-200 flex flex-col",
+        "fixed inset-y-0 right-0 w-[450px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-30 border-l border-slate-200 flex flex-col",
         showAI ? "translate-x-0" : "translate-x-full"
       )}>
         <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-indigo-50/50">
           <div className="flex items-center gap-2 text-indigo-900 font-semibold">
-            <Sparkles size={18} className="text-indigo-600 fill-indigo-200" />
-            <span>AI Copilot</span>
+            <Bot size={20} className="text-indigo-600 fill-indigo-200" />
+            <span>Operations Command</span>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleAI}><X size={18} /></Button>
         </div>
+
+        <div className="px-6 border-b border-slate-100">
+           <Tabs 
+              activeTab={aiTab} 
+              onChange={setAiTab} 
+              tabs={[{id: 'chat', label: 'Chat Assistant'}, {id: 'agents', label: 'Active Agents'}]}
+           />
+        </div>
         
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-           {/* Contextual Suggestions */}
-           <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Smart Suggestions</h3>
-              <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg space-y-3">
-                 <div className="flex gap-3">
-                   <div className="mt-1 h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                     <Calendar size={14} />
-                   </div>
-                   <div>
-                     <p className="text-sm font-medium text-indigo-900">Capacity Warning</p>
-                     <p className="text-xs text-indigo-700 mt-1">
-                       Boarding capacity for next weekend (Nov 3-5) is at 95%. Consider enabling "Waitlist Only" mode for new requests.
-                     </p>
-                     <div className="mt-3 flex gap-2">
-                       <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs h-8">Enable Waitlist</Button>
-                       <Button size="sm" variant="ghost" className="text-indigo-600 hover:bg-indigo-100 text-xs h-8">Dismiss</Button>
-                     </div>
-                   </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+           {aiTab === 'chat' ? (
+              <>
+                 {/* Quick Prompts */}
+                 <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Smart Suggestions</h3>
+                    <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg space-y-3">
+                       <div className="flex gap-3">
+                         <div className="mt-1 h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                           <Calendar size={14} />
+                         </div>
+                         <div>
+                           <p className="text-sm font-medium text-indigo-900">Capacity Warning</p>
+                           <p className="text-xs text-indigo-700 mt-1">
+                             Boarding capacity for next weekend (Nov 3-5) is at 95%. Consider enabling "Waitlist Only".
+                           </p>
+                           <div className="mt-3 flex gap-2">
+                             <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs h-8">Enable Waitlist</Button>
+                             <Button size="sm" variant="ghost" className="text-indigo-600 hover:bg-indigo-100 text-xs h-8">Dismiss</Button>
+                           </div>
+                         </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* Chat Interface Placeholder */}
+                 <div className="flex-1 flex flex-col justify-end gap-2 h-[400px]">
+                    <div className="flex gap-2">
+                       <Input placeholder="Ask to draft email, find pet, etc..." className="flex-1" />
+                       <Button size="icon"><ArrowRight size={18} /></Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                       <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Summarize today's issues</span>
+                       <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Draft report card for Rex</span>
+                    </div>
+                 </div>
+              </>
+           ) : (
+              <div className="space-y-4">
+                 {/* Agent Execution Terminal */}
+                 {runningAgent && (
+                    <div className="mb-6 bg-slate-900 text-green-400 rounded-lg p-4 font-mono text-xs shadow-lg border border-slate-700">
+                       <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+                          <span className="flex items-center gap-2"><Terminal size={12}/> AGENT: {MOCK_AGENTS?.find(a => a?.id === runningAgent)?.name.toUpperCase()}</span>
+                          <span className="animate-pulse">●</span>
+                       </div>
+                       <div ref={logContainerRef} className="h-32 overflow-y-auto space-y-1">
+                          {agentLogs.map((log, i) => <div key={i}>{log}</div>)}
+                       </div>
+                    </div>
+                 )}
+
+                 {/* Agent Result Display */}
+                 {agentResult && !runningAgent && (
+                    <div className="mb-6 animate-in fade-in slide-in-from-top-4">
+                       <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                          <div className="flex justify-between items-start mb-2">
+                             <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <CheckSquare size={14} className="text-green-500"/> Task Complete
+                             </h4>
+                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setAgentResult(null)}><X size={14}/></Button>
+                          </div>
+                          {agentResult}
+                       </div>
+                    </div>
+                 )}
+
+                 {/* Available Agents List */}
+                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Available Agents</h3>
+                 <div className="grid grid-cols-1 gap-3">
+                    {MOCK_AGENTS?.map(agent => (
+                       <Card key={agent?.id} className={cn("p-3 hover:border-primary-300 transition-all group", runningAgent === agent?.id ? "opacity-50 pointer-events-none" : "")}>
+                          <div className="flex justify-between items-start">
+                             <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                   <agent.icon size={18}/>
+                                </div>
+                                <div>
+                                   <h4 className="font-bold text-slate-800 text-sm">{agent?.name}</h4>
+                                   <p className="text-xs text-slate-500 line-clamp-1">{agent?.description}</p>
+                                </div>
+                             </div>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
+                             <span className="text-[10px] text-slate-400">Last run: {agent?.lastRun}</span>
+                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200" onClick={() => runAgent(agent)}>
+                                <Play size={10}/> {agent?.actionButtonText}
+                             </Button>
+                          </div>
+                       </Card>
+                    ))}
                  </div>
               </div>
-
-               <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg space-y-3">
-                 <div className="flex gap-3">
-                   <div className="mt-1 h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                     <Dog size={14} />
-                   </div>
-                   <div>
-                     <p className="text-sm font-medium text-amber-900">Vaccine Expiring</p>
-                     <p className="text-xs text-amber-800 mt-1">
-                       Bella's Rabies vaccine expires in 2 days. She is checked in for Boarding until Oct 30.
-                     </p>
-                     <div className="mt-3 flex gap-2">
-                       <Button size="sm" className="bg-amber-600 text-white hover:bg-amber-700 text-xs h-8 border-none">Notify Owner</Button>
-                     </div>
-                   </div>
-                 </div>
-              </div>
-           </div>
-
-           {/* Drafts */}
-           <div className="space-y-4 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Ask Copilot</h3>
-               <div className="flex gap-2">
-                 <Input placeholder="Type a request (e.g., 'Draft email to Alice')..." className="flex-1" />
-                 <Button size="icon"><ChevronRight size={18} /></Button>
-               </div>
-               <div className="flex flex-wrap gap-2">
-                 <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Summarize today's issues</span>
-                 <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Draft report card for Rex</span>
-               </div>
-           </div>
+           )}
         </div>
       </div>
 
@@ -504,6 +601,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
              </div>
              
              <div className="p-2 max-h-[60vh] overflow-y-auto">
+                {/* Search Results Rendering (Same as before) */}
                 {searchResults ? (
                   <div className="space-y-4">
                     {/* Pages */}
@@ -522,7 +620,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                         ))}
                       </div>
                     )}
-
+                    
                     {/* Channels */}
                     {searchResults.channels.length > 0 && (
                       <div>
@@ -587,11 +685,11 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                       <div>
                         <div className="px-3 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Reservations</div>
                         {searchResults.reservations.map(res => {
-                          const pet = MOCK_PETS.find(p => p.id === res.petId);
+                          const pet = MOCK_PETS.find(p => p?.id === res.petId);
                           return (
                             <div 
                               key={res.id}
-                              onClick={() => handleResultClick('/reservations')} // Ideally scrolls to res
+                              onClick={() => handleResultClick('/reservations')} 
                               className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-md cursor-pointer group"
                             >
                               <Calendar size={16} className="text-slate-400 group-hover:text-primary-600"/>
@@ -632,32 +730,8 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                          </div>
                        ))}
                     </div>
-                    
-                    <div className="mt-4 px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Recent</div>
-                    <div className="space-y-1">
-                       <div 
-                          className="flex items-center gap-3 px-3 py-3 hover:bg-slate-100 rounded-md cursor-pointer"
-                          onClick={() => { navigate('/owners-pets?id=p1&type=pets'); setQuickNavOpen(false); }}
-                        >
-                          <Dog size={18} className="text-slate-400" />
-                          <span className="text-slate-600">Rex (Golden Retriever)</span>
-                          <Badge className="ml-auto">Pet</Badge>
-                       </div>
-                       <div 
-                          className="flex items-center gap-3 px-3 py-3 hover:bg-slate-100 rounded-md cursor-pointer"
-                          onClick={() => { navigate('/owners-pets?id=o1&type=owners'); setQuickNavOpen(false); }}
-                       >
-                          <User size={18} className="text-slate-400" />
-                          <span className="text-slate-600">Alice Johnson</span>
-                          <Badge className="ml-auto">Owner</Badge>
-                       </div>
-                    </div>
                   </>
                 )}
-             </div>
-             <div className="p-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 flex justify-between px-4">
-                <span><strong className="text-slate-600">↑↓</strong> to navigate</span>
-                <span><strong className="text-slate-600">Enter</strong> to select</span>
              </div>
           </div>
         </div>

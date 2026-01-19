@@ -16,6 +16,8 @@ import { Notifications } from './components/Notifications';
 import { TeamManagement } from './components/Team';
 import { InternalChat } from './components/InternalChat';
 import { CareDashboard } from './components/CareDashboard';
+import { Marketing } from './components/Marketing';
+import { ServiceDashboard } from './components/ServiceDashboard'; // Import new dashboard
 import { CommunicationProvider, MessagesPage } from './components/Messaging';
 import { TeamChatProvider } from './components/TeamChatContext';
 
@@ -38,6 +40,8 @@ const App = () => {
               <Route path="/team" element={<TeamManagement />} />
               <Route path="/team/chat" element={<InternalChat />} />
               <Route path="/care" element={<CareDashboard />} />
+              <Route path="/services" element={<ServiceDashboard />} />
+              <Route path="/marketing" element={<Marketing />} />
               <Route path="/automations" element={<Automations />} />
               <Route path="/report-cards" element={<ReportCards />} />
               <Route path="/reports" element={<Reports />} />

@@ -5,7 +5,7 @@ import {
   ChevronRight, Sparkles, Building2, CalendarRange, 
   Users, FileText, Dog, Mail, DollarSign, Clock, LayoutGrid,
   CheckCircle, AlertCircle, Trash2, Edit2, Plus, GripVertical, Activity,
-  Package as PackageIcon, Crown, Check, Save, Calculator
+  Package as PackageIcon, Crown, Check, Save, Calculator, MessageSquare, Phone
 } from 'lucide-react';
 import { Card, Button, Input, Switch, Select, Label, Textarea, cn, Badge, Tabs, Modal } from './Common';
 import { 
@@ -13,7 +13,7 @@ import {
   MOCK_UNITS, MOCK_TAX_RATES, MOCK_USERS, MOCK_AUTOMATIONS, MOCK_AUDIT_LOGS,
   MOCK_PACKAGES, MOCK_MEMBERSHIPS
 } from '../constants';
-import { ServiceType, Package, Membership, MembershipBenefit } from '../types';
+import { ServiceType, Package, Membership, MembershipBenefit, CommunicationTemplate } from '../types';
 
 // --- Helper Components ---
 const SectionHeader = ({ title, description, action }: { title: string, description: string, action?: React.ReactNode }) => (
@@ -778,52 +778,105 @@ const InvoiceConfigView = () => {
 };
 
 const CommunicationsView = () => {
+   const [activeTab, setActiveTab] = useState<'Reservation' | 'Financial' | 'Health' | 'Operations' | 'Marketing'>('Reservation');
+   const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
+
+   const categories = ['Reservation', 'Financial', 'Health', 'Operations', 'Marketing'];
+   const filteredTemplates = MOCK_EMAIL_TEMPLATES.filter(t => t.category === activeTab);
+
    return (
     <div className="space-y-6 animate-in fade-in duration-300">
        <SectionHeader title="Email & SMS Templates" description="Customize automated notifications sent to customers." />
 
+       <div className="bg-slate-100 p-1 rounded-lg inline-flex mb-4">
+          {categories.map(cat => (
+             <button
+               key={cat}
+               onClick={() => { setActiveTab(cat as any); setSelectedTemplate(null); }}
+               className={cn("px-4 py-2 text-sm font-medium rounded-md transition-all", activeTab === cat ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700")}
+             >
+                {cat}
+             </button>
+          ))}
+       </div>
+
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1 p-4 space-y-2 h-fit">
-             <h3 className="font-bold text-sm text-slate-700 uppercase mb-4">Templates</h3>
-             {MOCK_EMAIL_TEMPLATES.map(template => (
-                <div key={template.id} className="p-3 rounded-md hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 transition-all">
-                   <div className="font-medium text-slate-900">{template.name}</div>
-                   <div className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Sparkles size={10} className="text-indigo-500"/> {template.trigger}</div>
-                </div>
-             ))}
-             <Button variant="ghost" className="w-full justify-start text-slate-500 gap-2 mt-4"><Plus size={16}/> Add Template</Button>
+          <Card className="lg:col-span-1 p-0 flex flex-col h-[500px] overflow-hidden">
+             <div className="p-4 border-b border-slate-100 bg-slate-50">
+                <h3 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Templates</h3>
+             </div>
+             <div className="flex-1 overflow-y-auto">
+                {filteredTemplates.map(template => (
+                   <div 
+                     key={template.id} 
+                     onClick={() => setSelectedTemplate(template)}
+                     className={cn(
+                        "p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors",
+                        selectedTemplate?.id === template.id ? "bg-blue-50 border-l-4 border-l-blue-500" : "border-l-4 border-l-transparent"
+                     )}
+                   >
+                      <div className="flex justify-between items-start mb-1">
+                         <div className="font-medium text-slate-900 text-sm">{template.name}</div>
+                         {template.type === 'SMS' ? <MessageSquare size={14} className="text-green-600"/> : <Mail size={14} className="text-blue-600"/>}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                         <Sparkles size={10} className="text-indigo-500"/> {template.trigger}
+                      </div>
+                   </div>
+                ))}
+             </div>
+             <div className="p-3 border-t border-slate-100">
+               <Button variant="ghost" className="w-full justify-center text-slate-500 gap-2"><Plus size={14}/> Add Template</Button>
+             </div>
           </Card>
 
-          <Card className="lg:col-span-2 p-6 space-y-4">
-             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                <h3 className="font-bold text-slate-800">Reservation Confirmation</h3>
-                <div className="flex gap-2">
-                   <Button variant="ghost" size="sm">Preview</Button>
-                   <Button size="sm">Save Changes</Button>
-                </div>
-             </div>
-             
-             <div className="space-y-4">
-                <div>
-                   <Label>Subject Line</Label>
-                   <div className="flex gap-2">
-                      <Input defaultValue="Your stay at Partners is confirmed!" />
-                      <Button variant="outline" size="icon" title="Ask AI to rewrite"><Sparkles size={16} className="text-indigo-600"/></Button>
+          <Card className="lg:col-span-2 p-6 flex flex-col h-[500px]">
+             {selectedTemplate ? (
+                <>
+                   <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+                      <div>
+                         <h3 className="font-bold text-slate-800 text-lg">{selectedTemplate.name}</h3>
+                         <div className="text-xs text-slate-500 mt-1">Trigger: {selectedTemplate.trigger}</div>
+                      </div>
+                      <div className="flex gap-2">
+                         <Switch checked={selectedTemplate.active} onCheckedChange={() => {}} />
+                         <span className="text-sm text-slate-600">Active</span>
+                         <div className="w-px h-6 bg-slate-200 mx-2"></div>
+                         <Button size="sm">Save Changes</Button>
+                      </div>
                    </div>
-                </div>
-                <div>
-                   <Label>Email Body</Label>
-                   <Textarea className="h-64 font-mono text-sm" defaultValue={`Hi {owner_name},\n\nWe are excited to see {pet_name} on {check_in_date}. Please remember to bring:\n- Food\n- Medications\n\nSee you soon,\nThe Partners Team`} />
-                </div>
-                <div className="bg-slate-50 p-3 rounded text-xs text-slate-500 space-y-1">
-                   <p className="font-bold">Available Variables:</p>
-                   <div className="flex gap-2 flex-wrap">
-                      {['{owner_name}', '{pet_name}', '{check_in_date}', '{check_out_date}', '{total_price}'].map(v => (
-                         <code key={v} className="bg-white px-1 py-0.5 rounded border border-slate-200">{v}</code>
-                      ))}
+                   
+                   <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                      {selectedTemplate.type === 'Email' && (
+                         <div>
+                            <Label>Subject Line</Label>
+                            <div className="flex gap-2">
+                               <Input defaultValue={selectedTemplate.subject} />
+                               <Button variant="outline" size="icon" title="Ask AI to rewrite"><Sparkles size={16} className="text-indigo-600"/></Button>
+                            </div>
+                         </div>
+                      )}
+                      <div>
+                         <Label>{selectedTemplate.type} Body</Label>
+                         <Textarea className="h-64 font-mono text-sm" defaultValue={selectedTemplate.body} />
+                         {selectedTemplate.type === 'SMS' && <div className="text-xs text-slate-400 mt-1 text-right">~{selectedTemplate.body.length} characters</div>}
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded text-xs text-slate-500 space-y-1 border border-slate-100">
+                         <p className="font-bold text-slate-700">Available Variables:</p>
+                         <div className="flex gap-2 flex-wrap">
+                            {['{owner_name}', '{pet_name}', '{check_in_date}', '{check_out_date}', '{total_price}', '{invoice_link}', '{service_type}'].map(v => (
+                               <code key={v} className="bg-white px-1 py-0.5 rounded border border-slate-200 text-indigo-600 cursor-pointer hover:bg-indigo-50">{v}</code>
+                            ))}
+                         </div>
+                      </div>
                    </div>
+                </>
+             ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                   <Mail size={48} className="opacity-20 mb-4"/>
+                   <p>Select a template to edit</p>
                 </div>
-             </div>
+             )}
           </Card>
        </div>
     </div>

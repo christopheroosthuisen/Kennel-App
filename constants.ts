@@ -1,5 +1,6 @@
 
-import { Owner, Pet, Reservation, ReservationStatus, ServiceType, Notification, Invoice, ReportCard, KennelUnit, ServiceConfig, PricingRule, EmailTemplate, TaxRate, UserAccount, AutomationRule, Workflow, WorkflowRun, WorkflowTemplate, WorkflowVariable, AuditLogEntry, ApprovalRequest, Package, Membership, Message, ClassType, ClassSession, ClassEnrollment, InternalChannel, InternalMessage, CareTask } from './types';
+import { Owner, Pet, Reservation, ReservationStatus, ServiceType, Notification, Invoice, ReportCard, KennelUnit, ServiceConfig, PricingRule, CommunicationTemplate, TaxRate, UserAccount, AutomationRule, Workflow, WorkflowRun, WorkflowTemplate, WorkflowVariable, AuditLogEntry, ApprovalRequest, Package, Membership, Message, ClassType, ClassSession, ClassEnrollment, InternalChannel, InternalMessage, CareTask, MarketingCampaign, CallLog, MarketingConnector, ReportDefinition, ServiceTask, AiAgent } from './types';
+import { ShieldCheck, UserX, Camera, TrendingUp, ClipboardList } from 'lucide-react';
 
 export const MOCK_OWNERS: Owner[] = [
   { 
@@ -30,7 +31,7 @@ export const MOCK_PETS: Pet[] = [
   { 
     id: 'p1', ownerId: 'o1', name: 'Rex', breed: 'Golden Retriever', weight: 75, dob: '2019-05-15', gender: 'M', fixed: true, 
     color: 'Golden', microchip: '9851123456789',
-    alerts: ['Meds'], vaccineStatus: 'Valid', photoUrl: 'https://picsum.photos/200/200?random=1', vet: 'Dr. Treat', 
+    alerts: ['Meds'], vaccineStatus: 'Valid', photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop', vet: 'Dr. Treat', 
     feedingInstructions: '2 cups Dry Kibble AM/PM. Mix in wet food on Sundays.',
     behaviorNotes: 'Friendly with all dogs. Loves playing fetch. Can be shy around loud noises.',
     vaccines: [
@@ -40,18 +41,20 @@ export const MOCK_PETS: Pet[] = [
     ],
     medications: [
       { id: 'm1', name: 'Apoquel', dosage: '16mg', frequency: 'Once Daily', instructions: 'Give with breakfast', active: true }
-    ]
+    ],
+    activeProgram: 'Senior Wellness'
   },
   { 
     id: 'p2', ownerId: 'o1', name: 'Bella', breed: 'Labrador', weight: 60, dob: '2020-08-10', gender: 'F', fixed: true, 
-    alerts: [], vaccineStatus: 'Expiring', photoUrl: 'https://picsum.photos/200/200?random=2', vet: 'Dr. Treat', feedingInstructions: '1.5 cups AM/PM',
+    alerts: [], vaccineStatus: 'Expiring', photoUrl: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eca6?w=200&h=200&fit=crop', vet: 'Dr. Treat', feedingInstructions: '1.5 cups AM/PM',
     vaccines: [
       { id: 'v4', name: 'Rabies', dateAdministered: '2021-01-01', dateExpires: '2024-01-01', status: 'Expiring' }
-    ]
+    ],
+    activeProgram: 'Weight Management'
   },
-  { id: 'p3', ownerId: 'o2', name: 'Charlie', breed: 'Beagle', weight: 25, dob: '2021-01-20', gender: 'M', fixed: false, alerts: ['Aggressive'], vaccineStatus: 'Valid', photoUrl: 'https://picsum.photos/200/200?random=3', vet: 'City Vet', feedingInstructions: '1 cup AM' },
-  { id: 'p4', ownerId: 'o3', name: 'Luna', breed: 'Poodle', weight: 40, dob: '2018-11-05', gender: 'F', fixed: true, alerts: [], vaccineStatus: 'Expired', photoUrl: 'https://picsum.photos/200/200?random=4', vet: 'City Vet', feedingInstructions: 'Free feed' },
-  { id: 'p5', ownerId: 'o4', name: 'Max', breed: 'German Shepherd', weight: 85, dob: '2022-03-10', gender: 'M', fixed: true, alerts: ['Separation Anxiety'], vaccineStatus: 'Valid', photoUrl: 'https://picsum.photos/200/200?random=5', vet: 'Dr. Treat', feedingInstructions: '3 cups PM' },
+  { id: 'p3', ownerId: 'o2', name: 'Charlie', breed: 'Beagle', weight: 25, dob: '2021-01-20', gender: 'M', fixed: false, alerts: ['Aggressive'], vaccineStatus: 'Valid', photoUrl: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=200&h=200&fit=crop', vet: 'City Vet', feedingInstructions: '1 cup AM', activeProgram: 'Obedience Level 1' },
+  { id: 'p4', ownerId: 'o3', name: 'Luna', breed: 'Poodle', weight: 40, dob: '2018-11-05', gender: 'F', fixed: true, alerts: [], vaccineStatus: 'Expired', photoUrl: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&h=200&fit=crop', vet: 'City Vet', feedingInstructions: 'Free feed' },
+  { id: 'p5', ownerId: 'o4', name: 'Max', breed: 'German Shepherd', weight: 85, dob: '2022-03-10', gender: 'M', fixed: true, alerts: ['Separation Anxiety'], vaccineStatus: 'Valid', photoUrl: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=200&h=200&fit=crop', vet: 'Dr. Treat', feedingInstructions: '3 cups PM', activeProgram: 'Puppy Jump Start' },
 ];
 
 export const MOCK_RESERVATIONS: Reservation[] = [
@@ -155,10 +158,91 @@ export const MOCK_PRICING_RULES: PricingRule[] = [
   { id: 'pr3', name: 'Holiday Surge', type: 'Holiday', amount: 10.00, isPercentage: false, triggerCondition: 'Dec 24 - Dec 26', enabled: true },
 ];
 
-export const MOCK_EMAIL_TEMPLATES: EmailTemplate[] = [
-  { id: 'et1', name: 'Reservation Confirmation', trigger: 'ReservationConfirmed', subject: 'Your stay at Partners is confirmed!', body: 'Hi {owner_name},\n\nWe are excited to see {pet_name} on {check_in_date}.' },
-  { id: 'et2', name: 'Vaccine Reminder', trigger: 'VaccineExpired', subject: 'Vaccines Due for {pet_name}', body: 'Hi {owner_name},\n\nIt looks like {pet_name} needs updated vaccines.' },
-  { id: 'et3', name: 'Welcome Email', trigger: 'ReservationRequested', subject: 'Welcome to Partners Dog!', body: 'Hi {owner_name},\n\nThanks for joining our family!' },
+export const MOCK_EMAIL_TEMPLATES: CommunicationTemplate[] = [
+  // --- Reservations ---
+  { 
+    id: 'et1', name: 'Reservation Confirmation', type: 'Email', category: 'Reservation', active: true, trigger: 'ReservationConfirmed', 
+    subject: 'Booking Confirmed: {pet_name} at Partners Dogs', 
+    body: 'Hi {owner_name},\n\nWe are excited to confirm {pet_name}\'s reservation for {service_type}.\n\nCheck-in: {start_date} at {start_time}\nCheck-out: {end_date}\n\nPlease ensure vaccinations are up to date before arrival.\n\nSee you soon,\nThe Partners Team' 
+  },
+  { 
+    id: 'sms1', name: 'Res Reminder (SMS)', type: 'SMS', category: 'Reservation', active: true, trigger: '24hBeforeCheckIn', 
+    body: 'Reminder: {pet_name} is booked for {service_type} starting tomorrow at {start_time}. Reply C to confirm or call us with questions. - Partners Dogs' 
+  },
+  { 
+    id: 'et2', name: 'Waitlist Opening', type: 'Email', category: 'Reservation', active: true, trigger: 'WaitlistSpotAvailable', 
+    subject: 'Good News! A spot opened up for {pet_name}', 
+    body: 'Hi {owner_name},\n\nA spot has become available for your waitlisted request on {start_date}. Please click here {link} to claim this spot within 24 hours.' 
+  },
+  { 
+    id: 'et3', name: 'Cancellation Notice', type: 'Email', category: 'Reservation', active: true, trigger: 'ReservationCancelled', 
+    subject: 'Cancellation Confirmed: {pet_name}', 
+    body: 'Hi {owner_name},\n\nThis email confirms that the reservation for {pet_name} on {start_date} has been cancelled. We hope to see you again soon!' 
+  },
+
+  // --- Financial ---
+  { 
+    id: 'et4', name: 'Invoice Ready', type: 'Email', category: 'Financial', active: true, trigger: 'InvoiceCreated', 
+    subject: 'Invoice #{invoice_number} from Partners Dogs', 
+    body: 'Hi {owner_name},\n\nYour invoice for {pet_name}\'s recent stay is ready. Total due: ${total_due}.\n\nView and pay online: {invoice_link}' 
+  },
+  { 
+    id: 'et5', name: 'Payment Receipt', type: 'Email', category: 'Financial', active: true, trigger: 'PaymentReceived', 
+    subject: 'Payment Receipt', 
+    body: 'Thank you for your payment of ${amount_paid}. Your transaction ID is {transaction_id}.' 
+  },
+  { 
+    id: 'et6', name: 'Deposit Request', type: 'Email', category: 'Financial', active: true, trigger: 'DepositRequired', 
+    subject: 'Action Required: Deposit for Holiday Booking', 
+    body: 'Hi {owner_name},\n\nTo secure {pet_name}\'s holiday reservation, a 50% deposit of ${deposit_amount} is required by {due_date}. Please pay here: {link}' 
+  },
+
+  // --- Health ---
+  { 
+    id: 'et7', name: 'Vaccine Reminder (30 Days)', type: 'Email', category: 'Health', active: true, trigger: 'VaccineExpiring30', 
+    subject: 'Vaccination Reminder for {pet_name}', 
+    body: 'Hi {owner_name},\n\nOur records show that {pet_name}\'s {vaccine_list} will expire on {expiry_date}. Please send us updated records before your next visit!' 
+  },
+  { 
+    id: 'sms2', name: 'Vaccine Overdue (SMS)', type: 'SMS', category: 'Health', active: true, trigger: 'VaccineExpired', 
+    body: 'Alert: {pet_name}\'s {vaccine_name} is now expired. We cannot accept check-ins until updated. Please upload records to your portal. - Partners Dogs' 
+  },
+
+  // --- Operations ---
+  { 
+    id: 'sms3', name: 'Ready for Pickup', type: 'SMS', category: 'Operations', active: true, trigger: 'ServiceCompleted', 
+    body: 'Great news! {pet_name} is all done with their {service_name} and ready to be picked up. See you soon!' 
+  },
+  { 
+    id: 'et8', name: 'Report Card Sent', type: 'Email', category: 'Operations', active: true, trigger: 'ReportCardPublished', 
+    subject: 'You have a new Report Card for {pet_name}!', 
+    body: 'Hi {owner_name},\n\nCheck out what {pet_name} did today! We\'ve uploaded photos and notes to their report card.\n\nView Report: {report_link}' 
+  },
+  { 
+    id: 'sms4', name: 'Check-in Notification', type: 'SMS', category: 'Operations', active: true, trigger: 'CheckedIn', 
+    body: '{pet_name} has been successfully checked in for {service_type}. We\'ll take great care of them!' 
+  },
+
+  // --- Marketing ---
+  { 
+    id: 'et9', name: 'Happy Birthday', type: 'Email', category: 'Marketing', active: true, trigger: 'PetBirthday', 
+    subject: 'Happy Birthday {pet_name}! 🎂', 
+    body: 'Happy Birthday to our favorite furry friend, {pet_name}! Come in anytime this week for a free birthday treat or 10% off a grooming service.' 
+  },
+  { 
+    id: 'et10', name: 'Review Request', type: 'Email', category: 'Marketing', active: true, trigger: 'PostCheckout24h', 
+    subject: 'How did we do?', 
+    body: 'Hi {owner_name},\n\nWe loved having {pet_name} stay with us. Would you mind sharing your experience on Google? It helps us a lot!\n\nReview Link: {google_review_link}' 
+  },
+  { 
+    id: 'et11', name: 'New Client Welcome', type: 'Email', category: 'Marketing', active: true, trigger: 'AccountCreated', 
+    subject: 'Welcome to the Partners Dogs Family!', 
+    body: 'Hi {owner_name},\n\nThanks for creating an account with us. We can\'t wait to meet {pet_name}. Please complete your profile and upload vaccination records to get started.' 
+  },
+  { 
+    id: 'sms5', name: 'We Miss You', type: 'SMS', category: 'Marketing', active: false, trigger: 'NoVisit90Days', 
+    body: 'Hi {owner_name}, we haven\'t seen {pet_name} in a while! Book a daycare day this week and get a free nail trim. Use code MISSYOU.' 
+  },
 ];
 
 export const MOCK_TAX_RATES: TaxRate[] = [
@@ -173,7 +257,7 @@ export const MOCK_USERS: UserAccount[] = [
 ];
 
 export const MOCK_AUTOMATIONS: AutomationRule[] = [
-  { id: 'a1', name: 'Pre-Arrival Reminder', trigger: '2 days before Check-In', action: 'Send Email: Reminder', enabled: true },
+  { id: 'a1', name: 'Pre-Arrival Reminder', trigger: '2 days before Check-In', action: 'Send Email: Reservation Reminder', enabled: true },
   { id: 'a2', name: 'Post-Checkout Survey', trigger: '1 day after Check-Out', action: 'Send Email: Survey', enabled: true },
   { id: 'a3', name: 'Vaccine Expiry Warning', trigger: '30 days before Expiry', action: 'Send SMS: Vaccine Alert', enabled: false },
 ];
@@ -302,4 +386,87 @@ export const MOCK_CARE_TASKS: CareTask[] = [
   { id: 'ct5', petId: 'p5', unit: 'K103', type: 'Feeding', shift: 'PM', status: 'Pending', description: '3 cups Dry', instructions: 'Wait for cool down' },
   { id: 'ct6', petId: 'p5', unit: 'K103', type: 'Medication', shift: 'PM', status: 'Pending', description: 'Joint Supplement', warning: false },
   { id: 'ct7', petId: 'p1', unit: 'K101', type: 'Feeding', shift: 'PM', status: 'Pending', description: '2 cups Dry Kibble' },
+];
+
+// --- Marketing Mocks ---
+
+export const MOCK_CAMPAIGNS: MarketingCampaign[] = [
+  { id: 'cmp1', name: 'Spring Boarding Promo', type: 'Email', status: 'Sent', sentCount: 450, openRate: 0.42, clickRate: 0.12, createdAt: '2023-09-15', audience: 'All Owners' },
+  { id: 'cmp2', name: 'Vaccine Reminder Blast', type: 'SMS', status: 'Sent', sentCount: 120, clickRate: 0.05, createdAt: '2023-10-01', audience: 'Expired Vax' },
+  { id: 'cmp3', name: 'Holiday Early Bird', type: 'Email', status: 'Draft', sentCount: 0, createdAt: '2023-10-20', audience: 'VIP' },
+  { id: 'cmp4', name: 'Weather Alert', type: 'SMS', status: 'Scheduled', sentCount: 0, scheduledFor: '2023-10-28T09:00:00', createdAt: '2023-10-27', audience: 'Current Reservations' },
+];
+
+export const MOCK_CALL_LOGS: CallLog[] = [
+  { id: 'call1', direction: 'Inbound', from: '555-0101', to: 'Business Line', durationSeconds: 145, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), status: 'Answered', relatedOwnerId: 'o1', recordingUrl: '#' },
+  { id: 'call2', direction: 'Inbound', from: '555-9999', to: 'Business Line', durationSeconds: 0, timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), status: 'Missed' },
+  { id: 'call3', direction: 'Outbound', from: 'Staff', to: '555-0102', durationSeconds: 65, timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(), status: 'Answered', relatedOwnerId: 'o2' },
+];
+
+export const MOCK_CONNECTORS: MarketingConnector[] = [
+  { id: 'conn1', provider: 'Twilio', type: 'SMS', status: 'Connected', apiKeyMasked: 'AC34...8a2f', phoneNumber: '(555) 123-4567' },
+  { id: 'conn2', provider: 'SendGrid', type: 'Email', status: 'Connected', apiKeyMasked: 'SG.92...x91z' },
+  { id: 'conn3', provider: 'Twilio', type: 'Voice', status: 'Connected', apiKeyMasked: 'AC34...8a2f', phoneNumber: '(555) 123-4567' },
+];
+
+// ... (Existing ALL_REPORTS_CONFIG remains at bottom) ...
+export const ALL_REPORTS_CONFIG: ReportDefinition[] = [
+  // --- FINANCIAL ---
+  { id: 'fin_goals', category: 'Financial', name: 'Appointment Goal Tracker Report', description: 'Track revenue goals against actuals.', columns: ['Date', 'Service Type', 'Goal', 'Actual', 'Variance'] },
+  // ... (rest of report config) ...
+  { id: 'emp_time', category: 'Employees', name: 'Time Clock', description: 'Hours worked.', columns: ['Staff Member', 'Date', 'Clock In', 'Clock Out', 'Total Hours'] },
+];
+
+// --- AI AGENTS ---
+export const MOCK_AGENTS: AiAgent[] = [
+  { 
+    id: 'vac-agent', 
+    name: 'Vaccine Compliance', 
+    description: 'Audits health records and drafts emails for expiring vaccines.', 
+    icon: ShieldCheck, 
+    category: 'Admin', 
+    status: 'Idle', 
+    lastRun: '1 day ago',
+    actionButtonText: 'Scan Records'
+  },
+  { 
+    id: 'churn-agent', 
+    name: 'Churn Prevention', 
+    description: 'Identifies clients who haven\'t booked recently and creates campaigns.', 
+    icon: UserX, 
+    category: 'Marketing', 
+    status: 'Idle', 
+    lastRun: '3 days ago',
+    actionButtonText: 'Find At-Risk'
+  },
+  { 
+    id: 'social-agent', 
+    name: 'Social Content', 
+    description: 'Generates captions and hashtags for daily pet photos.', 
+    icon: Camera, 
+    category: 'Marketing', 
+    status: 'Idle', 
+    lastRun: '4 hours ago',
+    actionButtonText: 'Generate Posts'
+  },
+  { 
+    id: 'rev-agent', 
+    name: 'Revenue Optimizer', 
+    description: 'Analyzes occupancy and suggests flash sales or upgrades.', 
+    icon: TrendingUp, 
+    category: 'Sales', 
+    status: 'Idle', 
+    lastRun: '1 week ago',
+    actionButtonText: 'Analyze'
+  },
+  { 
+    id: 'shift-agent', 
+    name: 'Shift Handoff', 
+    description: 'Summarizes daily incidents, tasks, and notes for next shift.', 
+    icon: ClipboardList, 
+    category: 'Operations', 
+    status: 'Idle', 
+    lastRun: '8 hours ago',
+    actionButtonText: 'Compile Handoff'
+  },
 ];

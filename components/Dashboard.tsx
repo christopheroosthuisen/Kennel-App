@@ -113,6 +113,9 @@ export const Dashboard = () => {
   };
 
   const renderIcons = (pet: any, owner: any) => {
+    // Check if pet or owner is undefined
+    if (!pet || !owner) return null;
+
     // Combine mock alerts and tags
     const rawTags = [...(pet.alerts || []), ...(owner.tags || [])];
     if (!pet.fixed) rawTags.push('Not Fixed');
@@ -351,8 +354,8 @@ export const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {currentList.length > 0 ? currentList.map((res) => {
-                    const pet = MOCK_PETS.find(p => p.id === res.petId);
-                    const owner = MOCK_OWNERS.find(o => o.id === res.ownerId);
+                    const pet = MOCK_PETS.find(p => p?.id === res.petId);
+                    const owner = MOCK_OWNERS.find(o => o?.id === res.ownerId);
                     
                     return (
                       <tr key={res.id} className="hover:bg-slate-50/80 transition-colors group">
@@ -372,14 +375,16 @@ export const Dashboard = () => {
                             case 'pet':
                               return (
                                 <td key={col.id} className="px-6 py-4 align-top">
-                                  <Link 
-                                    to={`/owners-pets?id=${pet?.id}&type=pets`}
-                                    className="font-bold text-slate-800 flex items-center gap-2 hover:text-primary-600 hover:underline text-base"
-                                  >
-                                    {pet?.name}
+                                  <div className="flex items-center gap-2">
+                                    <Link 
+                                      to={`/owners-pets?id=${pet?.id}&type=pets`}
+                                      className="font-bold text-slate-800 hover:text-primary-600 hover:underline text-base"
+                                    >
+                                      {pet?.name}
+                                    </Link>
                                     {pet?.gender === 'M' ? <span className="text-blue-400 text-xs font-normal opacity-70">♂</span> : <span className="text-pink-400 text-xs font-normal opacity-70">♀</span>}
                                     <span className="text-xs text-slate-400 font-normal">({pet?.breed})</span>
-                                  </Link>
+                                  </div>
                                   {/* Enhanced Visual Icons */}
                                   {renderIcons(pet, owner)}
                                 </td>
@@ -632,7 +637,7 @@ export const Dashboard = () => {
             </div>
             <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
                {MOCK_RESERVATIONS.filter(r => r.status === ReservationStatus.Expected).map(r => {
-                 const pet = MOCK_PETS.find(p => p.id === r.petId);
+                 const pet = MOCK_PETS.find(p => p?.id === r.petId);
                  return (
                    <div key={r.id} className="p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer flex items-center justify-between">
                       <div className="flex items-center gap-3">
