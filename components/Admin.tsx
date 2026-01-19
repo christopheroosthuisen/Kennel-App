@@ -4,13 +4,16 @@ import {
   Settings, Shield, CreditCard, Bell, Database, Search, 
   ChevronRight, Sparkles, Building2, CalendarRange, 
   Users, FileText, Dog, Mail, DollarSign, Clock, LayoutGrid,
-  CheckCircle, AlertCircle, Trash2, Edit2, Plus, GripVertical, Activity
+  CheckCircle, AlertCircle, Trash2, Edit2, Plus, GripVertical, Activity,
+  Package as PackageIcon, Crown, Check, Save, Calculator
 } from 'lucide-react';
-import { Card, Button, Input, Switch, Select, Label, Textarea, cn, Badge } from './Common';
+import { Card, Button, Input, Switch, Select, Label, Textarea, cn, Badge, Tabs, Modal } from './Common';
 import { 
   MOCK_SERVICE_CONFIGS, MOCK_PRICING_RULES, MOCK_EMAIL_TEMPLATES, 
-  MOCK_UNITS, MOCK_TAX_RATES, MOCK_USERS, MOCK_AUTOMATIONS, MOCK_AUDIT_LOGS 
+  MOCK_UNITS, MOCK_TAX_RATES, MOCK_USERS, MOCK_AUTOMATIONS, MOCK_AUDIT_LOGS,
+  MOCK_PACKAGES, MOCK_MEMBERSHIPS
 } from '../constants';
+import { ServiceType, Package, Membership, MembershipBenefit } from '../types';
 
 // --- Helper Components ---
 const SectionHeader = ({ title, description, action }: { title: string, description: string, action?: React.ReactNode }) => (
@@ -33,7 +36,429 @@ const EmptyState = ({ title, message }: { title: string, message: string }) => (
   </div>
 );
 
+// --- Staff Ratios View (Moved from Team.tsx) ---
+
+interface StaffRatio {
+  serviceType: string;
+  ratio: number;
+  currentCount: number;
+}
+
+const StaffRatiosView = () => {
+  const [ratios, setRatios] = useState<StaffRatio[]>([
+    { serviceType: 'Daycare', ratio: 15, currentCount: 42 },
+    { serviceType: 'Boarding', ratio: 20, currentCount: 28 },
+    { serviceType: 'Training', ratio: 8, currentCount: 12 },
+  ]);
+
+  const handleRatioChange = (index: number, val: string) => {
+    const newRatios = [...ratios];
+    newRatios[index].ratio = parseInt(val) || 1;
+    setRatios(newRatios);
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <SectionHeader 
+        title="Staffing Ratios & Capacity" 
+        description="Define safety standards for staff-to-dog ratios to drive scheduling requirements."
+        action={<Button onClick={() => alert('Settings Saved')} className="gap-2"><Save size={16}/> Save Configuration</Button>}
+      />
+
+      <div className="grid grid-cols-1 gap-6">
+        {ratios.map((ratio, index) => {
+           const recommendedStaff = Math.ceil(ratio.currentCount / ratio.ratio);
+           return (
+            <Card key={index} className="p-6 border-l-4 border-l-primary-500">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h4 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    {ratio.serviceType}
+                    <Badge variant="outline" className="text-xs font-normal">Active</Badge>
+                  </h4>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Current Occupancy: <strong>{ratio.currentCount} dogs</strong>
+                  </p>
+                </div>
+                <div className="flex flex-col items-end text-right">
+                   <span className="text-3xl font-bold text-slate-900">{recommendedStaff}</span>
+                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Staff Required</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-2">
+                  <Label>Max Dogs Per Staff Member</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      type="number" 
+                      value={ratio.ratio} 
+                      onChange={(e) => handleRatioChange(index, e.target.value)} 
+                      className="w-24 text-lg font-bold text-center"
+                    />
+                    <span className="text-sm text-slate-500">dogs / person</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Lowering this number increases safety but requires more staff.</p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                   <div className="flex items-start gap-3">
+                      <div className="bg-white p-2 rounded-full border border-slate-200 shadow-sm text-primary-600">
+                        <Calculator size={18}/>
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        <p className="font-medium text-slate-900 mb-1">Impact Analysis</p>
+                        With <strong>{ratio.currentCount}</strong> dogs, a ratio of <strong>1:{ratio.ratio}</strong> requires <strong>{recommendedStaff}</strong> staff members on the floor.
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </Card>
+           );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// --- Packages & Memberships Modals ---
+
+const PackageModal = ({ isOpen, onClose, pkg }: { isOpen: boolean, onClose: () => void, pkg?: Package | null }) => {
+  const [activeTab, setActiveTab] = useState('details');
+  // Local state would ideally be initialized from 'pkg' prop
+  
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={pkg ? "Edit Package" : "Create Package"} size="lg">
+      <div className="flex flex-col h-[500px]">
+        <div className="px-6 -mx-6 border-b border-slate-200 mb-6">
+           <Tabs 
+              activeTab={activeTab} 
+              onChange={setActiveTab}
+              tabs={[
+                 { id: 'details', label: 'Details' },
+                 { id: 'credits', label: 'Credits' },
+                 { id: 'financial', label: 'Financial' }
+              ]}
+           />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+           {activeTab === 'details' && (
+              <div className="space-y-4">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Package Name</Label><Input defaultValue={pkg?.name} placeholder="e.g. 5 Day Daycare Pass" /></div>
+                    <div><Label>Internal Name</Label><Input defaultValue={pkg?.internalName} placeholder="Daycare 5-Pack" /></div>
+                 </div>
+                 <div><Label>Description</Label><Textarea defaultValue={pkg?.description} placeholder="Description visible to customers..." /></div>
+                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded border border-slate-200">
+                    <div>
+                       <div className="font-bold text-slate-800">Status</div>
+                       <div className="text-xs text-slate-500">Available for purchase</div>
+                    </div>
+                    <Switch checked={pkg?.active ?? true} onCheckedChange={()=>{}} />
+                 </div>
+              </div>
+           )}
+
+           {activeTab === 'credits' && (
+              <div className="space-y-6">
+                 <div className="bg-blue-50 p-4 rounded border border-blue-100">
+                    <h4 className="font-bold text-blue-900 text-sm mb-1">Credit Configuration</h4>
+                    <p className="text-xs text-blue-700">Define what service this package grants access to and how many units.</p>
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                       <Label>Target Service</Label>
+                       <Select defaultValue={pkg?.serviceTypeTarget}>
+                          {Object.values(ServiceType).map(t => <option key={t}>{t}</option>)}
+                       </Select>
+                    </div>
+                    <div>
+                       <Label>Quantity (Credits)</Label>
+                       <Input type="number" defaultValue={pkg?.creditQuantity} placeholder="e.g. 5" />
+                    </div>
+                 </div>
+                 <div>
+                    <Label>Expiration</Label>
+                    <div className="flex gap-2 items-center">
+                       <Input type="number" defaultValue={pkg?.expiryDays} placeholder="Days" className="w-32" />
+                       <span className="text-sm text-slate-500">days after purchase</span>
+                    </div>
+                 </div>
+              </div>
+           )}
+
+           {activeTab === 'financial' && (
+              <div className="space-y-4">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Price ($)</Label><Input type="number" defaultValue={pkg?.price} prefix="$" /></div>
+                    <div><Label>Tax Code</Label><Select><option>Standard Service Tax</option><option>Tax Exempt</option></Select></div>
+                 </div>
+                 <div className="border-t border-slate-100 pt-4">
+                    <Label>Cost Allocation</Label>
+                    <p className="text-xs text-slate-500 mb-2">How should revenue be recognized per redeemed credit?</p>
+                    <div className="p-3 bg-slate-50 rounded text-sm font-mono flex justify-between items-center">
+                       <span>Per Credit Value:</span>
+                       <span className="font-bold">${((pkg?.price || 0) / (pkg?.creditQuantity || 1)).toFixed(2)}</span>
+                    </div>
+                 </div>
+              </div>
+           )}
+        </div>
+
+        <div className="pt-4 border-t border-slate-200 flex justify-between mt-4">
+           {pkg && <Button variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50"><Trash2 size={16}/> Delete</Button>}
+           <div className="flex gap-2 ml-auto">
+              <Button variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>Save Package</Button>
+           </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+const MembershipModal = ({ isOpen, onClose, mem }: { isOpen: boolean, onClose: () => void, mem?: Membership | null }) => {
+   const [activeTab, setActiveTab] = useState('details');
+   const [benefits, setBenefits] = useState<MembershipBenefit[]>(mem?.benefits || []);
+
+   const addBenefit = () => {
+      setBenefits([...benefits, { id: `new-${Date.now()}`, type: 'Discount', targetService: ServiceType.Boarding, value: 10 }]);
+   };
+
+   const removeBenefit = (id: string) => {
+      setBenefits(benefits.filter(b => b.id !== id));
+   };
+
+   return (
+      <Modal isOpen={isOpen} onClose={onClose} title={mem ? "Edit Membership" : "Create Membership"} size="lg">
+         <div className="flex flex-col h-[600px]">
+            <div className="px-6 -mx-6 border-b border-slate-200 mb-6">
+               <Tabs 
+                  activeTab={activeTab} 
+                  onChange={setActiveTab}
+                  tabs={[
+                     { id: 'details', label: 'Details' },
+                     { id: 'benefits', label: 'Benefits & Credits' },
+                     { id: 'financial', label: 'Financial' }
+                  ]}
+               />
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+               {activeTab === 'details' && (
+                  <div className="space-y-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <div><Label>Membership Name</Label><Input defaultValue={mem?.name} placeholder="e.g. VIP Club" /></div>
+                        <div><Label>Billing Frequency</Label><Select defaultValue={mem?.billingFrequency}><option>Monthly</option><option>Yearly</option></Select></div>
+                     </div>
+                     <div><Label>Description</Label><Textarea defaultValue={mem?.description} className="h-24" /></div>
+                     
+                     <div className="p-4 bg-slate-50 rounded border border-slate-200 space-y-4">
+                        <h4 className="font-bold text-slate-800 text-sm">Portal Settings</h4>
+                        <div className="flex justify-between items-center">
+                           <span className="text-sm text-slate-600">Enabled on Pet Parent Portal</span>
+                           <Switch checked={true} onCheckedChange={()=>{}} />
+                        </div>
+                        <div>
+                           <Label>Terms & Conditions (PDF)</Label>
+                           <div className="border-2 border-dashed border-slate-300 rounded p-4 text-center text-xs text-slate-500 cursor-pointer hover:bg-white transition-colors">
+                              Click to upload agreement PDF
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               )}
+
+               {activeTab === 'benefits' && (
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center mb-2">
+                        <Label>Membership Benefits</Label>
+                        <Button size="sm" variant="outline" onClick={addBenefit} className="gap-2"><Plus size={14}/> Add Benefit</Button>
+                     </div>
+                     
+                     <div className="space-y-3">
+                        {benefits.map((benefit, i) => (
+                           <div key={benefit.id} className="p-3 border border-slate-200 rounded-lg flex items-center gap-3 bg-slate-50 animate-in fade-in slide-in-from-left-4">
+                              <div className="bg-white p-2 rounded border border-slate-200 shrink-0">
+                                 {benefit.type === 'Discount' ? <PercentIcon size={16} className="text-green-600"/> : <TicketIcon size={16} className="text-blue-600"/>}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 flex-1">
+                                 <Select className="h-8 text-xs" defaultValue={benefit.type}>
+                                    <option value="Discount">Discount (%)</option>
+                                    <option value="Credit">Free Credit (Qty)</option>
+                                 </Select>
+                                 <Select className="h-8 text-xs" defaultValue={benefit.targetService}>
+                                    <option value="All">All Services</option>
+                                    {Object.values(ServiceType).map(t => <option key={t} value={t}>{t}</option>)}
+                                    <option value="Retail">Retail</option>
+                                 </Select>
+                                 <div className="relative">
+                                    <Input 
+                                       type="number" 
+                                       className="h-8 text-xs pr-8" 
+                                       defaultValue={benefit.value} 
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                                       {benefit.type === 'Discount' ? '%' : 'qty'}
+                                    </span>
+                                 </div>
+                              </div>
+                              <Button variant="ghost" size="icon" onClick={() => removeBenefit(benefit.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={16}/></Button>
+                           </div>
+                        ))}
+                        {benefits.length === 0 && <div className="text-center p-8 text-slate-400 italic border-2 border-dashed border-slate-100 rounded-lg">No benefits configured. Add discounts or credits.</div>}
+                     </div>
+                  </div>
+               )}
+
+               {activeTab === 'financial' && (
+                  <div className="space-y-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <div><Label>Recurring Price ($)</Label><Input type="number" defaultValue={mem?.price} prefix="$" /></div>
+                        <div><Label>Billing Day</Label><Select><option>Date of Sale</option><option>1st of Month</option></Select></div>
+                     </div>
+                     <div className="flex items-center gap-2 mt-2">
+                        <input type="checkbox" id="taxable" className="rounded border-slate-300" defaultChecked />
+                        <label htmlFor="taxable" className="text-sm text-slate-700">Membership Fee is Taxable</label>
+                     </div>
+                  </div>
+               )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 flex justify-between mt-4">
+               {mem && <Button variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50"><Trash2 size={16}/> Delete</Button>}
+               <div className="flex gap-2 ml-auto">
+                  <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                  <Button onClick={onClose}>Save Membership</Button>
+               </div>
+            </div>
+         </div>
+      </Modal>
+   );
+};
+
+// --- Icons for internal use ---
+const PercentIcon = ({ size, className }: { size: number, className?: string }) => (
+   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
+);
+const TicketIcon = ({ size, className }: { size: number, className?: string }) => (
+   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>
+);
+
 // --- Sub-Components for Admin Views ---
+
+const PackagesMembershipsView = () => {
+   const [activeTab, setActiveTab] = useState('packages');
+   const [editPackage, setEditPackage] = useState<Package | null | undefined>(undefined); // undefined = closed, null = create
+   const [editMembership, setEditMembership] = useState<Membership | null | undefined>(undefined);
+
+   return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+         <SectionHeader 
+            title="Packages & Memberships" 
+            description="Manage prepaid credits and recurring subscription plans." 
+            action={
+               <div className="flex gap-2">
+                  <Button onClick={() => activeTab === 'packages' ? setEditPackage(null) : setEditMembership(null)} className="gap-2">
+                     <Plus size={16}/> New {activeTab === 'packages' ? 'Package' : 'Membership'}
+                  </Button>
+               </div>
+            }
+         />
+
+         <div className="bg-slate-100 p-1 rounded-lg inline-flex mb-4">
+            <button 
+               onClick={() => setActiveTab('packages')} 
+               className={cn("px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2", activeTab === 'packages' ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700")}
+            >
+               <PackageIcon size={16}/> Packages (Prepaid)
+            </button>
+            <button 
+               onClick={() => setActiveTab('memberships')} 
+               className={cn("px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2", activeTab === 'memberships' ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700")}
+            >
+               <Crown size={16}/> Memberships (Recurring)
+            </button>
+         </div>
+
+         {activeTab === 'packages' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               {MOCK_PACKAGES.map(pkg => (
+                  <Card key={pkg.id} className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer group" onClick={() => setEditPackage(pkg)}>
+                     <div className="p-4 flex-1">
+                        <div className="flex justify-between items-start mb-2">
+                           <h3 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">{pkg.name}</h3>
+                           <Badge variant={pkg.active ? 'success' : 'default'}>{pkg.active ? 'Active' : 'Inactive'}</Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-4">{pkg.description}</p>
+                        <div className="bg-slate-50 rounded p-2 text-xs border border-slate-100 space-y-1">
+                           <div className="flex justify-between"><span>Credits:</span> <strong>{pkg.creditQuantity} x {pkg.serviceTypeTarget}</strong></div>
+                           <div className="flex justify-between"><span>Expires:</span> <span>{pkg.expiryDays ? `${pkg.expiryDays} days` : 'Never'}</span></div>
+                        </div>
+                     </div>
+                     <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                        <span className="font-bold text-lg text-slate-800">${pkg.price}</span>
+                        <Button size="sm" variant="ghost" className="h-6 text-xs">Edit</Button>
+                     </div>
+                  </Card>
+               ))}
+            </div>
+         )}
+
+         {activeTab === 'memberships' && (
+            <div className="space-y-4">
+               {MOCK_MEMBERSHIPS.map(mem => (
+                  <Card key={mem.id} className="p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group" onClick={() => setEditMembership(mem)}>
+                     <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+                           <Crown size={24}/>
+                        </div>
+                        <div>
+                           <h3 className="font-bold text-slate-900 text-lg group-hover:text-primary-600 transition-colors flex items-center gap-2">
+                              {mem.name}
+                              {!mem.active && <Badge>Inactive</Badge>}
+                           </h3>
+                           <div className="text-sm text-slate-500 mt-1 flex items-center gap-3">
+                              <span className="flex items-center gap-1"><Clock size={14}/> {mem.billingFrequency}</span>
+                              <span>•</span>
+                              <span>{mem.benefits.length} Benefits Configured</span>
+                           </div>
+                        </div>
+                     </div>
+                     
+                     <div className="flex items-center gap-6">
+                        <div className="text-right">
+                           <div className="text-2xl font-bold text-slate-900">${mem.price}</div>
+                           <div className="text-xs text-slate-400">per {mem.billingFrequency === 'Monthly' ? 'month' : 'year'}</div>
+                        </div>
+                        <ChevronRight size={20} className="text-slate-300 group-hover:text-slate-600"/>
+                     </div>
+                  </Card>
+               ))}
+            </div>
+         )}
+
+         {/* Modals */}
+         {editPackage !== undefined && (
+            <PackageModal 
+               isOpen={true} 
+               onClose={() => setEditPackage(undefined)} 
+               pkg={editPackage} 
+            />
+         )}
+         {editMembership !== undefined && (
+            <MembershipModal
+               isOpen={true}
+               onClose={() => setEditMembership(undefined)}
+               mem={editMembership}
+            />
+         )}
+      </div>
+   );
+};
+
+// ... (Rest of existing sub-components: AuditLogView, UsageQuotasView, etc. stay the same, but re-exporting structure for clarity) ...
 
 const AuditLogView = () => (
    <div className="space-y-6 animate-in fade-in duration-300">
@@ -665,6 +1090,7 @@ const ADMIN_CATEGORIES = [
          { id: 'services', label: 'Reservation Types', view: <ReservationTypesView /> },
          { id: 'lodging', label: 'Lodging & Units', view: <LodgingUnitsView /> },
          { id: 'addons', label: 'Add-ons & Retail', view: <AddonsRetailView /> },
+         { id: 'packages', label: 'Packages & Memberships', view: <PackagesMembershipsView /> },
       ]
    },
    { 
@@ -695,6 +1121,7 @@ const ADMIN_CATEGORIES = [
       items: [
          { id: 'users', label: 'User Accounts', view: <UserAccountsView /> },
          { id: 'roles', label: 'Permissions', view: <PermissionsView /> },
+         { id: 'ratios', label: 'Staff Ratios & Capacity', view: <StaffRatiosView /> },
          { id: 'audit', label: 'Audit Logs', view: <AuditLogView /> },
          { id: 'time', label: 'Time Clock', view: <EmptyState title="Time Clock" message="Shift scheduling and time tracking settings." /> },
       ]

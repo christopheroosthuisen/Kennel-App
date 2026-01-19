@@ -5,12 +5,14 @@ import {
   MoreHorizontal, Plus, LogIn, LogOut, Printer, Filter, Search, Check, ThumbsUp, ThumbsDown,
   Settings, MessageSquare, CreditCard, Edit2, ArrowUp, ArrowDown, Eye, EyeOff, GripVertical,
   FileText, Syringe, Shield, DollarSign, Mail, Phone, ExternalLink, Trash2, Utensils, Dog, User, 
-  Scissors, Zap, Link as LinkIcon
+  Scissors, Zap, Link as LinkIcon, BedDouble, Tag
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, cn, Modal, Label, Input, Select, BulkActionBar } from './Common';
-import { EditReservationModal, EditPetModal, EditOwnerModal, AddServiceModal } from './EditModals';
+import { EditReservationModal, EditPetModal, EditOwnerModal, AddServiceModal, CheckOutModal, QuickLodgingModal, QuickTagModal } from './EditModals';
 import { RunCardModal } from './RunCard';
+import { EstimateModal } from './EstimateModal';
+import { useCommunication } from './Messaging';
 import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_APPROVALS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 
@@ -34,6 +36,7 @@ const ICON_MAP: Record<string, { icon: React.ReactNode, color: string, title: st
   'Not Fixed': { icon: '⚠️', color: 'bg-amber-50 text-amber-700', border: 'border-amber-200', title: 'Intact' },
   'Special Diet': { icon: <Utensils size={12}/>, color: 'bg-orange-50 text-orange-700', border: 'border-orange-200', title: 'Special Diet' },
   'Puppy': { icon: '🐾', color: 'bg-pink-50 text-pink-700', border: 'border-pink-200', title: 'Puppy' },
+  'Note': { icon: <FileText size={12}/>, color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-200', title: 'Note' },
 };
 
 export const Dashboard = () => {
@@ -43,13 +46,16 @@ export const Dashboard = () => {
   const [isColumnConfigOpen, setIsColumnConfigOpen] = useState(false);
   
   // Edit Modals State
-  const [activeModal, setActiveModal] = useState<{ type: 'reservation' | 'pet' | 'owner' | 'service', id: string } | null>(null);
+  const [activeModal, setActiveModal] = useState<{ type: 'reservation' | 'pet' | 'owner' | 'service' | 'checkout' | 'lodging' | 'tag', id: string } | null>(null);
   
-  // Run Card State
+  // Run Card & Estimate State
   const [runCardReservationId, setRunCardReservationId] = useState<string | null>(null);
+  const [estimateReservationId, setEstimateReservationId] = useState<string | null>(null);
 
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement>(null);
+
+  const { openCompose } = useCommunication();
 
   // Default Columns Configuration
   const [columns, setColumns] = useState<ColumnDef[]>([
@@ -107,10 +113,11 @@ export const Dashboard = () => {
   };
 
   const renderIcons = (pet: any, owner: any) => {
-    const tags = [...(pet.alerts || []), ...(owner.tags || [])];
-    if (!pet.fixed) tags.push('Not Fixed');
+    // Combine mock alerts and tags
+    const rawTags = [...(pet.alerts || []), ...(owner.tags || [])];
+    if (!pet.fixed) rawTags.push('Not Fixed');
     // Mock Logic for Diet
-    if (pet.feedingInstructions && pet.feedingInstructions.length > 50) tags.push('Special Diet');
+    if (pet.feedingInstructions && pet.feedingInstructions.length > 50) rawTags.push('Special Diet');
 
     return (
       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -126,12 +133,18 @@ export const Dashboard = () => {
         )}
 
         {/* Dynamic Tags from Map */}
-        {tags.map((tag, idx) => {
-          const config = ICON_MAP[tag];
+        {rawTags.map((tagString, idx) => {
+          // Check for "TagKey:Note" format
+          const [key, note] = tagString.includes(':') ? tagString.split(':') : [tagString, null];
+          const config = ICON_MAP[key]; // Look up by base key
+          
           if (!config) return null;
           
+          // Use specific note if available, otherwise default title
+          const tooltip = note ? `${config.title}: ${note}` : config.title;
+          
           return (
-             <div key={`${tag}-${idx}`} title={config.title} className={cn("h-5 w-5 flex items-center justify-center rounded border cursor-help text-xs font-normal transition-transform hover:scale-110", config.color, config.border || 'border-transparent')}>
+             <div key={`${tagString}-${idx}`} title={tooltip} className={cn("h-5 w-5 flex items-center justify-center rounded border cursor-help text-xs font-normal transition-transform hover:scale-110", config.color, config.border || 'border-transparent')}>
                 {config.icon}
              </div>
           );
@@ -473,24 +486,24 @@ export const Dashboard = () => {
                                                  </button>
                                                )}
                                                {res.status === ReservationStatus.CheckedIn && (
-                                                  <button className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 rounded flex items-center gap-3 transition-colors text-slate-700">
+                                                  <button 
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 rounded flex items-center gap-3 transition-colors text-slate-700"
+                                                    onClick={() => { setActiveModal({ type: 'checkout', id: res.id }); setActiveActionMenu(null); }}
+                                                  >
                                                      <LogOut size={16} className="text-amber-500"/> 
                                                      <span className="font-medium">Check Out</span>
                                                   </button>
                                                )}
                                                
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
+                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700" 
+                                                  onClick={() => { setEstimateReservationId(res.id); setActiveActionMenu(null); }}
+                                               >
                                                   <DollarSign size={16} className="text-slate-400"/> View Estimate
                                                </button>
                                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700" 
                                                   onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
                                                >
-                                                  <FileText size={16} className="text-slate-400"/> Create Run Card
-                                               </button>
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
-                                                  onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
-                                               >
-                                                  <Printer size={16} className="text-slate-400"/> Print Run Card
+                                                  <FileText size={16} className="text-slate-400"/> Run Card
                                                </button>
                                             </div>
                                             
@@ -498,10 +511,22 @@ export const Dashboard = () => {
                                             <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Communication</div>
                                             
                                             <div className="p-1 space-y-0.5">
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
+                                               <button 
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
+                                                  onClick={() => {
+                                                     openCompose({ recipientId: owner?.id, recipientName: owner?.name, type: 'SMS', context: `Reservation #${res.id}` });
+                                                     setActiveActionMenu(null);
+                                                  }}
+                                               >
                                                   <MessageSquare size={16} className="text-blue-400"/> SMS Parent
                                                </button>
-                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700">
+                                               <button 
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
+                                                  onClick={() => {
+                                                     openCompose({ recipientId: owner?.id, recipientName: owner?.name, type: 'Email', context: `Reservation #${res.id}` });
+                                                     setActiveActionMenu(null);
+                                                  }}
+                                               >
                                                   <Mail size={16} className="text-blue-400"/> Email Parent
                                                </button>
                                             </div>
@@ -510,6 +535,18 @@ export const Dashboard = () => {
                                             <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Manage</div>
 
                                             <div className="p-1 space-y-0.5">
+                                               <button 
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
+                                                  onClick={() => { setActiveModal({ type: 'lodging', id: res.id }); setActiveActionMenu(null); }}
+                                               >
+                                                  <BedDouble size={16} className="text-slate-400"/> Change Lodging
+                                               </button>
+                                               <button 
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
+                                                  onClick={() => { setActiveModal({ type: 'tag', id: pet?.id || '' }); setActiveActionMenu(null); }}
+                                               >
+                                                  <Tag size={16} className="text-slate-400"/> Manage Tags/Notes
+                                               </button>
                                                <button 
                                                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
                                                   onClick={() => { setActiveModal({ type: 'reservation', id: res.id }); setActiveActionMenu(null); }}
@@ -571,7 +608,16 @@ export const Dashboard = () => {
             )}
          </div>
          
-         <BulkActionBar count={selectedIds.length} onClear={() => setSelectedIds([])} />
+         <BulkActionBar 
+            count={selectedIds.length} 
+            onClear={() => setSelectedIds([])}
+            actions={
+               <>
+                  <Button size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" onClick={() => openCompose({ type: 'Email' })}><Mail size={14}/> Email Selected</Button>
+                  <Button size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" onClick={() => openCompose({ type: 'SMS' })}><MessageSquare size={14}/> SMS Selected</Button>
+               </>
+            }
+         />
       </Card>
 
       {/* Quick Check-In Modal */}
@@ -673,6 +719,27 @@ export const Dashboard = () => {
           id={activeModal.id} 
         />
       )}
+      {activeModal?.type === 'checkout' && (
+        <CheckOutModal 
+          isOpen={true} 
+          onClose={() => setActiveModal(null)} 
+          id={activeModal.id} 
+        />
+      )}
+      {activeModal?.type === 'lodging' && (
+        <QuickLodgingModal 
+          isOpen={true} 
+          onClose={() => setActiveModal(null)} 
+          id={activeModal.id} 
+        />
+      )}
+      {activeModal?.type === 'tag' && (
+        <QuickTagModal 
+          isOpen={true} 
+          onClose={() => setActiveModal(null)} 
+          id={activeModal.id} 
+        />
+      )}
 
       {/* Run Card Modal */}
       {runCardReservationId && (
@@ -680,6 +747,15 @@ export const Dashboard = () => {
           isOpen={true} 
           onClose={() => setRunCardReservationId(null)} 
           reservationId={runCardReservationId} 
+        />
+      )}
+
+      {/* Estimate Modal */}
+      {estimateReservationId && (
+        <EstimateModal
+          isOpen={true}
+          onClose={() => setEstimateReservationId(null)}
+          reservationId={estimateReservationId}
         />
       )}
     </div>

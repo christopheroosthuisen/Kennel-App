@@ -1,5 +1,5 @@
 
-import { Owner, Pet, Reservation, ReservationStatus, ServiceType, Notification, Invoice, ReportCard, KennelUnit, ServiceConfig, PricingRule, EmailTemplate, TaxRate, UserAccount, AutomationRule, Workflow, WorkflowRun, WorkflowTemplate, WorkflowVariable, AuditLogEntry, ApprovalRequest } from './types';
+import { Owner, Pet, Reservation, ReservationStatus, ServiceType, Notification, Invoice, ReportCard, KennelUnit, ServiceConfig, PricingRule, EmailTemplate, TaxRate, UserAccount, AutomationRule, Workflow, WorkflowRun, WorkflowTemplate, WorkflowVariable, AuditLogEntry, ApprovalRequest, Package, Membership, Message, ClassType, ClassSession, ClassEnrollment, InternalChannel, InternalMessage, CareTask } from './types';
 
 export const MOCK_OWNERS: Owner[] = [
   { 
@@ -156,8 +156,9 @@ export const MOCK_PRICING_RULES: PricingRule[] = [
 ];
 
 export const MOCK_EMAIL_TEMPLATES: EmailTemplate[] = [
-  { id: 'et1', name: 'Reservation Confirmation', trigger: 'ReservationConfirmed', subject: 'Your stay at Partners is confirmed!', body: 'Hi {owner_name},\n\nWe are excited to see {pet_name} on {check_in_date}...' },
-  { id: 'et2', name: 'Vaccine Reminder', trigger: 'VaccineExpired', subject: 'Vaccines Due for {pet_name}', body: 'Hi {owner_name},\n\nIt looks like {pet_name} needs updated vaccines...' },
+  { id: 'et1', name: 'Reservation Confirmation', trigger: 'ReservationConfirmed', subject: 'Your stay at Partners is confirmed!', body: 'Hi {owner_name},\n\nWe are excited to see {pet_name} on {check_in_date}.' },
+  { id: 'et2', name: 'Vaccine Reminder', trigger: 'VaccineExpired', subject: 'Vaccines Due for {pet_name}', body: 'Hi {owner_name},\n\nIt looks like {pet_name} needs updated vaccines.' },
+  { id: 'et3', name: 'Welcome Email', trigger: 'ReservationRequested', subject: 'Welcome to Partners Dog!', body: 'Hi {owner_name},\n\nThanks for joining our family!' },
 ];
 
 export const MOCK_TAX_RATES: TaxRate[] = [
@@ -176,19 +177,6 @@ export const MOCK_AUTOMATIONS: AutomationRule[] = [
   { id: 'a2', name: 'Post-Checkout Survey', trigger: '1 day after Check-Out', action: 'Send Email: Survey', enabled: true },
   { id: 'a3', name: 'Vaccine Expiry Warning', trigger: '30 days before Expiry', action: 'Send SMS: Vaccine Alert', enabled: false },
 ];
-
-export const AI_SUGGESTIONS = {
-  dashboard: [
-    { title: "Capacity Alert", text: "Boarding is at 95% capacity for this weekend. Consider enabling waitlist only." },
-    { title: "Staffing", text: "High check-in volume expected tomorrow (24 pets). Suggest adding 1 floater." }
-  ],
-  reservation: [
-    { title: "Upsell Opportunity", text: "Rex has a history of 'Exit Baths' but none selected. Suggest adding one?" },
-    { title: "Vaccine Check", text: "Verified Bordetella looks valid, but Rabies expires in 2 weeks. Remind owner." }
-  ]
-};
-
-// --- Workflow Mocks ---
 
 export const MOCK_WORKFLOWS: Workflow[] = [
   { 
@@ -241,4 +229,77 @@ export const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
 
 export const MOCK_APPROVALS: ApprovalRequest[] = [
   { id: 'ap1', workflowRunId: 'run2', workflowName: 'Refund Approval Flow', requestedAt: '10 mins ago', description: 'Refund $65.00 for Rex (Owner: Alice)', status: 'Pending', dataPayload: { amount: 65, reason: 'Early Checkout' } }
+];
+
+export const MOCK_PACKAGES: Package[] = [
+  { id: 'pkg1', name: '5 Day Daycare Pack', internalName: 'Daycare 5-Pack', description: 'Prepaid 5 full days of daycare.', price: 165.00, serviceTypeTarget: ServiceType.Daycare, creditQuantity: 5, expiryDays: 90, active: true },
+  { id: 'pkg2', name: '10 Day Daycare Pack', internalName: 'Daycare 10-Pack', description: 'Prepaid 10 full days. Best value.', price: 315.00, serviceTypeTarget: ServiceType.Daycare, creditQuantity: 10, expiryDays: 120, active: true },
+  { id: 'pkg3', name: '3 Night Boarding', internalName: 'Boarding 3-Night', description: 'Prepaid boarding nights.', price: 150.00, serviceTypeTarget: ServiceType.Boarding, creditQuantity: 3, expiryDays: 365, active: true },
+];
+
+export const MOCK_MEMBERSHIPS: Membership[] = [
+  { 
+    id: 'mem1', name: 'Partners VIP', price: 49.99, billingFrequency: 'Monthly', description: 'Ultimate care package for VIPs.', active: true,
+    benefits: [
+      { id: 'b1', type: 'Discount', targetService: ServiceType.Boarding, value: 10 },
+      { id: 'b2', type: 'Credit', targetService: ServiceType.Grooming, value: 1, period: 'Per Month' }
+    ]
+  },
+  { 
+    id: 'mem2', name: 'Unlimited Daycare', price: 500.00, billingFrequency: 'Monthly', description: 'Unlimited daycare access.', active: true,
+    benefits: [
+      { id: 'b3', type: 'Credit', targetService: ServiceType.Daycare, value: 999, period: 'Unlimited' } // Mocking unlimited with high number or logic
+    ]
+  }
+];
+
+export const MOCK_MESSAGES: Message[] = [
+  { id: 'm1', ownerId: 'o1', direction: 'Inbound', type: 'SMS', body: 'Can you please double check if I packed Rex\'s blue blanket?', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), status: 'Read', sender: 'Alice Johnson' },
+  { id: 'm2', ownerId: 'o1', direction: 'Outbound', type: 'SMS', body: 'Hi Alice! Yes, we found the blue blanket. It\'s safe in his cubby.', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), status: 'Delivered', sender: 'Staff' },
+  { id: 'm3', ownerId: 'o2', direction: 'Outbound', type: 'Email', subject: 'Invoice #INV-2023-001', body: 'Hi Bob, please find attached your invoice for Charlie\'s stay.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), status: 'Sent', sender: 'Billing System' },
+];
+
+export const MOCK_CLASS_TYPES: ClassType[] = [
+  { id: 'ct1', name: 'Puppy Kindergarten', description: 'Socialization and basic obedience for puppies under 6 months.', defaultCapacity: 8, defaultPrice: 25.00, creditCost: 1, color: 'bg-pink-100 text-pink-700 border-pink-200' },
+  { id: 'ct2', name: 'Obedience Lvl 1', description: 'Sit, Stay, Down, and Loose Leash Walking foundations.', defaultCapacity: 6, defaultPrice: 35.00, creditCost: 1, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { id: 'ct3', name: 'Agility Intro', description: 'Fun introduction to agility equipment.', defaultCapacity: 5, defaultPrice: 40.00, creditCost: 1, color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  { id: 'ct4', name: 'Open Play', description: 'Supervised indoor play time.', defaultCapacity: 15, defaultPrice: 15.00, creditCost: 0.5, color: 'bg-green-100 text-green-700 border-green-200' },
+];
+
+export const MOCK_CLASS_SESSIONS: ClassSession[] = [
+  { id: 'cs1', classTypeId: 'ct1', startTime: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(), durationMinutes: 60, instructorId: 'u2', capacity: 8, status: 'Scheduled' },
+  { id: 'cs2', classTypeId: 'ct2', startTime: new Date(new Date().setHours(14, 0, 0, 0)).toISOString(), durationMinutes: 60, instructorId: 'u1', capacity: 6, status: 'Scheduled' },
+  { id: 'cs3', classTypeId: 'ct1', startTime: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(), durationMinutes: 60, instructorId: 'u2', capacity: 8, status: 'Scheduled' },
+  { id: 'cs4', classTypeId: 'ct3', startTime: new Date(new Date().setHours(17, 30, 0, 0)).toISOString(), durationMinutes: 90, instructorId: 'u3', capacity: 5, status: 'Scheduled' },
+];
+
+export const MOCK_CLASS_ENROLLMENTS: ClassEnrollment[] = [
+  { id: 'ce1', sessionId: 'cs1', petId: 'p1', ownerId: 'o1', status: 'Enrolled', paymentMethod: 'Package Credit', checkedIn: true },
+  { id: 'ce2', sessionId: 'cs1', petId: 'p2', ownerId: 'o1', status: 'Enrolled', paymentMethod: 'Drop-In', checkedIn: false },
+  { id: 'ce3', sessionId: 'cs2', petId: 'p5', ownerId: 'o4', status: 'Waitlist', paymentMethod: 'Unpaid', checkedIn: false },
+];
+
+export const MOCK_CHANNELS: InternalChannel[] = [
+  { id: 'c1', name: 'general', type: 'public', description: 'Company-wide announcements and chatter', unreadCount: 0, members: ['u1', 'u2', 'u3'] },
+  { id: 'c2', name: 'kennel-staff', type: 'public', description: 'Coordination for kennel techs', unreadCount: 2, members: ['u2', 'u3'] },
+  { id: 'c3', name: 'front-desk', type: 'public', description: 'Reception and client handling', unreadCount: 0, members: ['u1', 'u2'] },
+  { id: 'c4', name: 'managers-only', type: 'private', description: 'Management discussions', unreadCount: 0, members: ['u1', 'u2'] },
+  { id: 'dm1', name: 'Sarah Smith', type: 'dm', unreadCount: 1, members: ['u1', 'u2'] },
+];
+
+export const MOCK_INTERNAL_MESSAGES: InternalMessage[] = [
+  { id: 'm1', channelId: 'c1', senderId: 'u2', content: 'Has anyone seen the key to Suite 4?', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), reactions: { '🤔': 1 } },
+  { id: 'm2', channelId: 'c1', senderId: 'u3', content: 'I think it was left on the break room table.', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), reactions: { '👍': 1 } },
+  { id: 'm3', channelId: 'c2', senderId: 'u2', content: 'Rex had a bit of an upset stomach after lunch, please monitor him.', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), reactions: {} },
+  { id: 'm4', channelId: 'dm1', senderId: 'u2', content: 'Hey, can you approve my time off request for next Friday?', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), reactions: {} },
+];
+
+export const MOCK_CARE_TASKS: CareTask[] = [
+  { id: 'ct1', petId: 'p1', unit: 'K101', type: 'Feeding', shift: 'AM', status: 'Pending', description: '2 cups Dry Kibble', instructions: 'Mix in wet food' },
+  { id: 'ct2', petId: 'p1', unit: 'K101', type: 'Medication', shift: 'AM', status: 'Pending', description: 'Apoquel 16mg', warning: true },
+  { id: 'ct3', petId: 'p2', unit: 'K102', type: 'Feeding', shift: 'AM', status: 'Prepared', description: '1.5 cups Dry Kibble' },
+  { id: 'ct4', petId: 'p3', unit: 'Playgroup A', type: 'Feeding', shift: 'AM', status: 'Completed', description: '1 cup Dry', completedAt: new Date().toISOString() },
+  { id: 'ct5', petId: 'p5', unit: 'K103', type: 'Feeding', shift: 'PM', status: 'Pending', description: '3 cups Dry', instructions: 'Wait for cool down' },
+  { id: 'ct6', petId: 'p5', unit: 'K103', type: 'Medication', shift: 'PM', status: 'Pending', description: 'Joint Supplement', warning: false },
+  { id: 'ct7', petId: 'p1', unit: 'K101', type: 'Feeding', shift: 'PM', status: 'Pending', description: '2 cups Dry Kibble' },
 ];

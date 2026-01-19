@@ -3,12 +3,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Calendar, Search, Filter, Plus, MoreHorizontal, Check, User, Dog, 
   ChevronLeft, ChevronRight, Clock, AlertCircle, Edit2, DollarSign, Trash2, 
-  Mail, MessageSquare, Printer, FileText
+  Mail, MessageSquare, Printer, FileText, LogOut, RefreshCw, XCircle, MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Input, Select, Badge, Modal, Label, cn, SortableHeader, BulkActionBar } from './Common';
-import { EditReservationModal, EditPetModal, EditOwnerModal, AddServiceModal, LodgingManager, ServiceManager } from './EditModals';
+import { EditReservationModal, EditPetModal, EditOwnerModal, AddServiceModal, LodgingManager, ServiceManager, CheckOutModal } from './EditModals';
 import { RunCardModal } from './RunCard';
+import { EstimateModal } from './EstimateModal';
+import { useCommunication } from './Messaging';
+import { useTeamChat } from './TeamChatContext';
 import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 
@@ -16,19 +19,24 @@ export const Reservations = () => {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{key: string, dir: 'asc' | 'desc'}>({ key: 'date', dir: 'asc' });
   
   // Edit Modals State
-  const [activeModal, setActiveModal] = useState<{ type: 'reservation' | 'pet' | 'owner' | 'service', id: string } | null>(null);
+  const [activeModal, setActiveModal] = useState<{ type: 'reservation' | 'pet' | 'owner' | 'service' | 'checkout', id: string } | null>(null);
   
-  // Run Card State
+  // Run Card & Estimate State
   const [runCardReservationId, setRunCardReservationId] = useState<string | null>(null);
+  const [estimateReservationId, setEstimateReservationId] = useState<string | null>(null);
 
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement>(null);
+
+  const { openCompose } = useCommunication();
+  const { openDiscuss } = useTeamChat();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,9 +52,13 @@ export const Reservations = () => {
   const filteredReservations = MOCK_RESERVATIONS.filter(r => {
     const pet = MOCK_PETS.find(p => p.id === r.petId);
     const owner = MOCK_OWNERS.find(o => o.id === r.ownerId);
+    const term = search.toLowerCase();
+    
     const searchMatch = 
-      pet?.name.toLowerCase().includes(search.toLowerCase()) || 
-      owner?.name.toLowerCase().includes(search.toLowerCase());
+      r.id.toLowerCase().includes(term) ||
+      pet?.name.toLowerCase().includes(term) || 
+      owner?.name.toLowerCase().includes(term);
+      
     const statusMatch = filterStatus === 'all' || r.status === filterStatus;
     return searchMatch && statusMatch;
   });
@@ -62,6 +74,20 @@ export const Reservations = () => {
     }));
   };
 
+  const handleCancelReservation = (id: string) => {
+    if (window.confirm("Are you sure you want to cancel this reservation? This action cannot be undone.")) {
+      // Logic to cancel would go here
+      alert(`Reservation #${id} has been cancelled.`);
+      setActiveActionMenu(null);
+    }
+  };
+
+  const handleBulkStatusChange = (status: string) => {
+    alert(`Successfully updated ${selectedIds.length} reservations to '${status}'`);
+    setIsBulkStatusOpen(false);
+    setSelectedIds([]);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -75,12 +101,12 @@ export const Reservations = () => {
         </div>
       </div>
 
-      <Card className="flex flex-col">
+      <Card className="flex flex-col mb-20">
         <div className="p-4 border-b border-slate-200 flex gap-4 items-center bg-slate-50/50">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <Input 
-              placeholder="Search by pet or owner..." 
+              placeholder="Search by ID, pet, or owner..." 
               className="pl-9" 
               value={search} 
               onChange={(e) => setSearch(e.target.value)}
@@ -206,7 +232,18 @@ export const Reservations = () => {
                                <span className="text-[10px] font-normal text-slate-400">#{res.id}</span>
                             </div>
                             <div className="p-1 space-y-0.5">
-                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors">
+                               {res.status === ReservationStatus.CheckedIn && (
+                                  <button 
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 rounded flex items-center gap-3 transition-colors text-slate-700"
+                                    onClick={() => { setActiveModal({ type: 'checkout', id: res.id }); setActiveActionMenu(null); }}
+                                  >
+                                     <LogOut size={16} className="text-amber-500"/> 
+                                     <span className="font-medium">Check Out</span>
+                                  </button>
+                               )}
+                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
+                                   onClick={() => { setEstimateReservationId(res.id); setActiveActionMenu(null); }}
+                                >
                                     <DollarSign size={16} className="text-slate-400"/> View Estimate
                                 </button>
                                 <button 
@@ -225,11 +262,25 @@ export const Reservations = () => {
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
                                   onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
                                 >
-                                    <FileText size={16} className="text-slate-400"/> Create Run Card
+                                    <FileText size={16} className="text-slate-400"/> Run Card
                                 </button>
                             </div>
                             <div className="h-px bg-slate-100 my-1"/>
                             <div className="p-1 space-y-0.5">
+                                <button 
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
+                                  onClick={() => { 
+                                     openDiscuss({ 
+                                        type: 'reservation', 
+                                        id: res.id, 
+                                        title: `Reservation #${res.id} - ${pet?.name}`, 
+                                        subtitle: `Owner: ${owner?.name}` 
+                                     });
+                                     setActiveActionMenu(null); 
+                                  }}
+                                >
+                                    <MessageCircle size={16} className="text-indigo-500"/> Discuss in Team Chat
+                                </button>
                                 <button 
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
                                   onClick={() => { setActiveModal({ type: 'pet', id: pet?.id || '' }); setActiveActionMenu(null); }}
@@ -242,13 +293,21 @@ export const Reservations = () => {
                                 >
                                     <User size={16} className="text-slate-400"/> Edit Owner
                                 </button>
-                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors">
+                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
+                                   onClick={() => { 
+                                      openCompose({ recipientId: owner?.id, recipientName: owner?.name, type: 'SMS', context: `Reservation #${res.id}` });
+                                      setActiveActionMenu(null);
+                                   }}
+                                >
                                     <MessageSquare size={16} className="text-slate-400"/> Message Parent
                                 </button>
                             </div>
                             <div className="h-px bg-slate-100 my-1"/>
                             <div className="p-1">
-                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 rounded flex items-center gap-3 transition-colors">
+                                <button 
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 rounded flex items-center gap-3 transition-colors"
+                                  onClick={() => handleCancelReservation(res.id)}
+                                >
                                     <Trash2 size={16}/> Cancel Reservation
                                 </button>
                             </div>
@@ -262,7 +321,33 @@ export const Reservations = () => {
           </table>
         </div>
         
-        <BulkActionBar count={selectedIds.length} onClear={() => setSelectedIds([])} />
+        <BulkActionBar 
+           count={selectedIds.length} 
+           onClear={() => setSelectedIds([])}
+           actions={
+              <>
+                 <Button 
+                    size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" 
+                    onClick={() => openCompose({ recipientName: `${selectedIds.length} Selected Owners`, type: 'Email' })}
+                 >
+                    <Mail size={14}/> Email Selected
+                 </Button>
+                 <Button 
+                    size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" 
+                    onClick={() => openCompose({ recipientName: `${selectedIds.length} Selected Owners`, type: 'SMS' })}
+                 >
+                    <MessageSquare size={14}/> SMS Selected
+                 </Button>
+                 <div className="h-4 w-px bg-slate-700/50 mx-1"></div>
+                 <Button 
+                    size="sm" variant="ghost" className="text-blue-200 hover:bg-slate-800 hover:text-blue-100 gap-2"
+                    onClick={() => setIsBulkStatusOpen(true)}
+                 >
+                    <RefreshCw size={14}/> Change Status
+                 </Button>
+              </>
+           }
+        />
       </Card>
 
       <NewReservationModal isOpen={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} />
@@ -298,6 +383,28 @@ export const Reservations = () => {
          </div>
       </Modal>
 
+      {/* Bulk Status Modal */}
+      <Modal isOpen={isBulkStatusOpen} onClose={() => setIsBulkStatusOpen(false)} title="Bulk Status Change" size="sm">
+         <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+               Update status for <strong>{selectedIds.length}</strong> selected reservations.
+            </p>
+            <div>
+               <Label>New Status</Label>
+               <Select id="bulk-status-select" className="mt-1">
+                  {Object.values(ReservationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+               </Select>
+            </div>
+            <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
+               <Button variant="ghost" onClick={() => setIsBulkStatusOpen(false)}>Cancel</Button>
+               <Button onClick={() => {
+                  const select = document.getElementById('bulk-status-select') as HTMLSelectElement;
+                  handleBulkStatusChange(select.value);
+               }}>Update All</Button>
+            </div>
+         </div>
+      </Modal>
+
       {/* Edit Modals */}
       {activeModal?.type === 'reservation' && (
         <EditReservationModal 
@@ -327,6 +434,13 @@ export const Reservations = () => {
           id={activeModal.id} 
         />
       )}
+      {activeModal?.type === 'checkout' && (
+        <CheckOutModal 
+          isOpen={true} 
+          onClose={() => setActiveModal(null)} 
+          id={activeModal.id} 
+        />
+      )}
 
       {/* Run Card Modal */}
       {runCardReservationId && (
@@ -334,6 +448,15 @@ export const Reservations = () => {
           isOpen={true} 
           onClose={() => setRunCardReservationId(null)} 
           reservationId={runCardReservationId} 
+        />
+      )}
+
+      {/* Estimate Modal */}
+      {estimateReservationId && (
+        <EstimateModal
+          isOpen={true}
+          onClose={() => setEstimateReservationId(null)}
+          reservationId={estimateReservationId}
         />
       )}
     </div>
@@ -377,73 +500,41 @@ const NewReservationModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: ()
       <div className="min-h-[300px]">
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-             <Label>Search Owner</Label>
-             <div className="relative">
-                <Search className="absolute left-3 top-3 text-slate-400" size={16} />
-                <Input placeholder="Start typing name, email or phone..." className="pl-10" />
-             </div>
-             <div className="space-y-2 mt-2">
-                {MOCK_OWNERS.slice(0, 3).map(owner => (
-                  <div 
-                    key={owner.id} 
-                    onClick={() => { setSelectedOwner(owner.id); nextStep(); }}
-                    className="p-3 border border-slate-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 cursor-pointer transition-all flex justify-between items-center"
-                  >
-                    <div>
-                      <div className="font-semibold text-slate-900">{owner.name}</div>
-                      <div className="text-xs text-slate-500">{owner.email} • {owner.phone}</div>
-                    </div>
-                    <ChevronRight size={16} className="text-slate-300" />
-                  </div>
-                ))}
-             </div>
+            <Label>Select Owner</Label>
+            <Select onChange={(e) => setSelectedOwner(e.target.value)} value={selectedOwner}>
+              <option value="">-- Choose Owner --</option>
+              {MOCK_OWNERS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </Select>
+            <div className="flex justify-end mt-4">
+              <Button onClick={nextStep} disabled={!selectedOwner}>Next</Button>
+            </div>
           </div>
         )}
-
+        
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-             <Label>Select Pet(s)</Label>
-             <div className="grid grid-cols-2 gap-4">
-                {MOCK_PETS.filter(p => p.ownerId === selectedOwner).map(pet => (
-                  <div 
-                    key={pet.id} 
-                    onClick={() => { setSelectedPet(pet.id); nextStep(); }}
-                    className={cn(
-                      "p-4 border rounded-lg cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
-                      selectedPet === pet.id ? "border-primary-600 bg-primary-50 ring-1 ring-primary-600" : "border-slate-200 hover:border-primary-300"
-                    )}
-                  >
-                    <img src={pet.photoUrl} className="h-16 w-16 rounded-full object-cover" alt={pet.name} />
-                    <div>
-                      <div className="font-semibold text-slate-900">{pet.name}</div>
-                      <div className="text-xs text-slate-500">{pet.breed}</div>
-                    </div>
-                  </div>
-                ))}
-             </div>
+            <Label>Select Pet</Label>
+            <Select onChange={(e) => setSelectedPet(e.target.value)} value={selectedPet}>
+              <option value="">-- Choose Pet --</option>
+              {MOCK_PETS.filter(p => p.ownerId === selectedOwner).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+            <div className="flex justify-between mt-4">
+              <Button variant="ghost" onClick={prevStep}>Back</Button>
+              <Button onClick={nextStep} disabled={!selectedPet}>Next</Button>
+            </div>
           </div>
         )}
 
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Check In</Label>
-                <Input type="datetime-local" value={dates.checkIn} onChange={(e) => setDates({ ...dates, checkIn: e.target.value })} />
-              </div>
-              <div>
-                <Label>Check Out</Label>
-                <Input type="datetime-local" value={dates.checkOut} onChange={(e) => setDates({ ...dates, checkOut: e.target.value })} />
-              </div>
-            </div>
-            
-            <div className="border-t border-slate-100 pt-4">
-               <LodgingManager 
-                  checkIn={dates.checkIn || new Date().toISOString()} 
-                  checkOut={dates.checkOut || new Date().toISOString()} 
-                  currentLodging={lodging}
-                  onChange={setLodging}
-               />
+             <div className="grid grid-cols-2 gap-4">
+               <div><Label>Check In</Label><Input type="datetime-local" onChange={e => setDates({...dates, checkIn: e.target.value})} /></div>
+               <div><Label>Check Out</Label><Input type="datetime-local" onChange={e => setDates({...dates, checkOut: e.target.value})} /></div>
+             </div>
+             <LodgingManager checkIn={dates.checkIn} checkOut={dates.checkOut} currentLodging={lodging} onChange={setLodging} />
+             <div className="flex justify-between mt-4">
+              <Button variant="ghost" onClick={prevStep}>Back</Button>
+              <Button onClick={nextStep}>Next</Button>
             </div>
           </div>
         )}
@@ -451,46 +542,25 @@ const NewReservationModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         {step === 4 && (
            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <ServiceManager selectedServices={services} onChange={setServices} />
+              <div className="flex justify-between mt-4">
+                <Button variant="ghost" onClick={prevStep}>Back</Button>
+                <Button onClick={nextStep}>Next</Button>
+              </div>
            </div>
         )}
 
         {step === 5 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                 <span className="text-sm text-slate-500">Pet</span>
-                 <span className="font-medium">{MOCK_PETS.find(p => p.id === selectedPet)?.name}</span>
-               </div>
-               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                 <span className="text-sm text-slate-500">Lodging</span>
-                 <span className="font-medium">{lodging ? `Unit ${lodging}` : 'Unassigned'}</span>
-               </div>
-               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                 <span className="text-sm text-slate-500">Add-ons</span>
-                 <span className="font-medium text-right">{services.length > 0 ? services.join(', ') : 'None'}</span>
-               </div>
-               <div className="flex justify-between items-center pt-2">
-                 <span className="text-base font-bold text-slate-900">Estimated Total</span>
-                 <span className="text-lg font-bold text-green-600">$250.00</span>
-               </div>
-             </div>
-             
-             {MOCK_PETS.find(p => p.id === selectedPet)?.alerts.includes('Meds') && (
-                <div className="bg-red-50 p-3 rounded-md border border-red-200 flex gap-2">
-                   <AlertCircle className="text-red-600 shrink-0" size={20} />
-                   <p className="text-sm text-red-800">Alert: This pet requires medication administration. Ensure med sheets are printed.</p>
-                </div>
-             )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between pt-6 border-t border-slate-100 mt-6">
-        <Button variant="ghost" onClick={prevStep} disabled={step === 1}>Back</Button>
-        {step < 5 ? (
-           <Button onClick={nextStep} disabled={step === 1 && !selectedOwner || step === 2 && !selectedPet}>Next Step</Button>
-        ) : (
-           <Button onClick={onClose} className="bg-green-600 hover:bg-green-700">Confirm Booking</Button>
+           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
+              <div className="h-16 w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                 <Check size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">Ready to Book!</h3>
+              <p className="text-slate-500">Confirm details for {MOCK_PETS.find(p=>p.id===selectedPet)?.name}</p>
+              <div className="flex justify-between mt-8">
+                <Button variant="ghost" onClick={prevStep}>Back</Button>
+                <Button onClick={onClose} className="bg-green-600 hover:bg-green-700">Confirm Booking</Button>
+              </div>
+           </div>
         )}
       </div>
     </Modal>

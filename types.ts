@@ -219,6 +219,7 @@ export interface UserAccount {
   role: 'Admin' | 'Manager' | 'Staff';
   status: 'Active' | 'Inactive';
   lastLogin: string;
+  avatarUrl?: string;
 }
 
 export interface AutomationRule {
@@ -229,7 +230,7 @@ export interface AutomationRule {
   enabled: boolean;
 }
 
-// --- Workflow Engine Types (Block 1-4) ---
+// --- Workflow Engine Types ---
 
 export interface Workflow {
   id: string;
@@ -299,4 +300,141 @@ export interface ApprovalRequest {
   description: string;
   status: 'Pending' | 'Approved' | 'Denied';
   dataPayload: any;
+}
+
+// --- Packages & Memberships Types ---
+
+export interface Package {
+  id: string;
+  name: string;
+  internalName: string;
+  description: string;
+  price: number;
+  serviceTypeTarget: ServiceType; // Which service this applies to (e.g., Daycare)
+  creditQuantity: number; // How many units (e.g., 5 days)
+  expiryDays?: number; // Null = no expiry
+  active: boolean;
+}
+
+export interface Membership {
+  id: string;
+  name: string;
+  price: number;
+  billingFrequency: 'Monthly' | 'Yearly';
+  description: string;
+  benefits: MembershipBenefit[];
+  active: boolean;
+}
+
+export interface MembershipBenefit {
+  id: string;
+  type: 'Discount' | 'Credit'; 
+  targetService: ServiceType | 'All' | 'Retail';
+  value: number; // Percentage for Discount, Quantity for Credit
+  period?: 'Per Month' | 'Per Year' | 'Unlimited'; // For credits
+}
+
+// --- Messaging Types ---
+
+export interface Message {
+  id: string;
+  ownerId: string;
+  direction: 'Inbound' | 'Outbound';
+  type: 'Email' | 'SMS';
+  subject?: string;
+  body: string;
+  timestamp: string;
+  status: 'Sent' | 'Delivered' | 'Read' | 'Failed' | 'Queued';
+  sender?: string; // 'System', 'Staff Name', 'Client Name'
+  attachments?: string[];
+}
+
+export interface Conversation {
+  ownerId: string;
+  ownerName: string;
+  lastMessageAt: string;
+  lastMessagePreview: string;
+  unreadCount: number;
+  tags: string[]; // e.g. 'Billing', 'Reservation'
+}
+
+// --- Group Class Types ---
+
+export interface ClassType {
+  id: string;
+  name: string;
+  description: string;
+  defaultCapacity: number; // 0 = unlimited/open
+  defaultPrice: number;
+  creditCost: number; // e.g., 1 credit
+  color: string;
+  requirements?: string[]; // e.g., "Puppy < 6mo", "Vaccines"
+  instructorIds?: string[]; // Allowed instructors
+}
+
+export interface ClassSession {
+  id: string;
+  classTypeId: string;
+  startTime: string; // ISO Date Time start
+  durationMinutes: number;
+  instructorId: string;
+  capacity: number;
+  status: 'Scheduled' | 'Completed' | 'Cancelled';
+}
+
+export interface ClassEnrollment {
+  id: string;
+  sessionId: string;
+  petId: string;
+  ownerId: string;
+  status: 'Enrolled' | 'Waitlist' | 'Cancelled' | 'Attended' | 'No Show';
+  paymentMethod: 'Package Credit' | 'Drop-In' | 'Membership' | 'Unpaid';
+  checkedIn: boolean;
+}
+
+// --- Internal Team Chat Types ---
+
+export interface InternalChannel {
+  id: string;
+  name: string;
+  type: 'public' | 'private' | 'dm';
+  description?: string;
+  unreadCount: number;
+  members: string[]; // User IDs
+}
+
+export interface InternalMessageContext {
+  type: 'reservation' | 'pet' | 'owner' | 'estimate' | 'report_card' | 'invoice';
+  id: string;
+  title: string;
+  subtitle?: string;
+  link?: string;
+}
+
+export interface InternalMessage {
+  id: string;
+  channelId: string;
+  senderId: string; // User ID or 'AI'
+  content: string;
+  timestamp: string;
+  reactions: Record<string, number>; // emoji: count
+  attachments?: { name: string, type: 'image' | 'file' }[];
+  context?: InternalMessageContext;
+  isSystem?: boolean;
+}
+
+// --- Care Dashboard Types ---
+
+export interface CareTask {
+  id: string;
+  petId: string;
+  unit: string; // "K101"
+  type: 'Feeding' | 'Medication';
+  shift: 'AM' | 'Noon' | 'PM';
+  status: 'Pending' | 'Prepared' | 'Completed' | 'Skipped';
+  description: string; // "1 Cup Kibble" or "10mg Apoquel"
+  instructions?: string; // "Mix with wet food"
+  warning?: boolean; // Allergy or high risk
+  assignedTo?: string;
+  completedAt?: string;
 }

@@ -3,11 +3,14 @@ import React, { useState } from 'react';
 import { 
   Search, Phone, Mail, MapPin, Dog, Plus, AlertTriangle, FileText, Syringe, 
   History, User, CheckCircle, File, Download, MessageSquare, Edit2, Sparkles,
-  Pill, Stethoscope, Paperclip, Calendar, Utensils, LayoutGrid, List as ListIcon, MoreHorizontal
+  Pill, Stethoscope, Paperclip, Calendar, Utensils, LayoutGrid, List as ListIcon, MoreHorizontal,
+  MessageCircle
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
 import { EditOwnerModal, EditPetModal } from './EditModals';
+import { useCommunication } from './Messaging';
+import { useTeamChat } from './TeamChatContext';
 import { MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_INVOICES } from '../constants';
 
 export const Profiles = () => {
@@ -21,6 +24,8 @@ export const Profiles = () => {
   const [isNewOwnerOpen, setIsNewOwnerOpen] = useState(false);
   const [isNewPetOpen, setIsNewPetOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{key: string, dir: 'asc' | 'desc'}>({ key: 'name', dir: 'asc' });
+
+  const { openCompose } = useCommunication();
 
   // Update URL helper
   const updateParams = (updates: Record<string, string | null>) => {
@@ -264,7 +269,16 @@ export const Profiles = () => {
          </Card>
        )}
 
-       <BulkActionBar count={selectedIds.length} onClear={() => setSelectedIds([])} />
+       <BulkActionBar 
+          count={selectedIds.length} 
+          onClear={() => setSelectedIds([])} 
+          actions={
+             <>
+                <Button size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" onClick={() => openCompose({ type: 'Email' })}><Mail size={14}/> Email Selected</Button>
+                <Button size="sm" variant="ghost" className="text-white hover:bg-slate-800 hover:text-white gap-2" onClick={() => openCompose({ type: 'SMS' })}><MessageSquare size={14}/> SMS Selected</Button>
+             </>
+          }
+       />
 
        {/* New Owner Modal (Reusing EditOwnerModal style/logic would be ideal, but keeping separate for create vs edit clarity for now) */}
        <Modal isOpen={isNewOwnerOpen} onClose={() => setIsNewOwnerOpen(false)} title="New Client Registration" size="lg">
@@ -317,6 +331,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const pets = MOCK_PETS.filter(p => p.ownerId === id);
   const reservations = MOCK_RESERVATIONS.filter(r => r.ownerId === id);
   const invoices = MOCK_INVOICES.filter(i => i.ownerId === id);
+  const { openDiscuss } = useTeamChat();
   const [tab, setTab] = useState('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -351,6 +366,9 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                  ${owner.balance.toFixed(2)}
               </div>
               <div className="flex gap-2 justify-end">
+                 <Button size="sm" variant="ghost" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none gap-2" onClick={() => openDiscuss({ type: 'owner', id: owner.id, title: owner.name, subtitle: 'Profile Flag' })}>
+                    <MessageCircle size={14}/> Flag for Review
+                 </Button>
                  <Button size="sm" variant="outline" onClick={() => setIsEditOpen(true)}>Edit Profile</Button>
                  <Button size="sm">Make Payment</Button>
               </div>
@@ -447,6 +465,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
 
 const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const pet = MOCK_PETS.find(p => p.id === id);
+  const { openDiscuss } = useTeamChat();
   const [tab, setTab] = useState('care');
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -474,6 +493,9 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                   </div>
                </div>
                <div className="flex gap-2">
+                  <Button variant="ghost" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none gap-2" onClick={() => openDiscuss({ type: 'pet', id: pet.id, title: pet.name, subtitle: 'Pet Profile Review' })}>
+                     <MessageCircle size={14}/> Flag for Review
+                  </Button>
                   <Button variant="outline" onClick={() => setIsEditOpen(true)}>Edit Profile</Button>
                   <Button variant="primary">New Reservation</Button>
                </div>

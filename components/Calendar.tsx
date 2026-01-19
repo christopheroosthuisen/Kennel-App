@@ -7,13 +7,12 @@ import {
 } from 'lucide-react';
 import { Card, Button, Select, Badge, cn, Modal, Label, Input, Textarea, Tabs } from './Common';
 import { EditReservationModal } from './EditModals';
-import { MOCK_RESERVATIONS, MOCK_UNITS, MOCK_PETS } from '../constants';
+import { MOCK_RESERVATIONS, MOCK_UNITS, MOCK_PETS, MOCK_CLASS_SESSIONS, MOCK_CLASS_TYPES } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 
-// --- Types & Mocks for Calendar ---
+// --- Types for Calendar ---
 
 type ViewMode = 'facility' | 'lodging';
-type CalendarFormat = 'month' | 'week' | 'day';
 
 interface CalendarEvent {
   id: string;
@@ -25,12 +24,6 @@ interface CalendarEvent {
   details?: string;
   color?: string;
 }
-
-// Mock Classes (local to this component for now)
-const MOCK_CLASSES = [
-  { id: 'c1', title: 'Puppy Social', start: '10:00', duration: 60, trainer: 'Sarah' },
-  { id: 'c2', title: 'Obedience Lvl 1', start: '14:00', duration: 60, trainer: 'John' },
-];
 
 // --- Helper Functions ---
 
@@ -84,22 +77,23 @@ const getEventsForDate = (date: Date): CalendarEvent[] => {
     }
   });
 
-  // 2. Map Classes (Recurring daily for mock purposes)
-  MOCK_CLASSES.forEach(cls => {
-    const [hours, mins] = cls.start.split(':').map(Number);
-    const start = new Date(date);
-    start.setHours(hours, mins, 0, 0);
-    const end = new Date(start.getTime() + cls.duration * 60000);
-    
-    events.push({
-      id: `${cls.id}-${date.getTime()}`,
-      title: cls.title,
-      type: 'class',
-      start: start,
-      end: end,
-      details: `Trainer: ${cls.trainer}`,
-      color: 'bg-blue-50 text-blue-700 border-blue-200 dashed border'
-    });
+  // 2. Map Group Classes (from Shared Constants)
+  MOCK_CLASS_SESSIONS.forEach(cls => {
+    const classStart = new Date(cls.startTime);
+    if (classStart.toDateString() === dateStr) {
+       const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId);
+       const end = new Date(classStart.getTime() + cls.durationMinutes * 60000);
+       
+       events.push({
+         id: `class-${cls.id}`,
+         title: classType?.name || 'Group Class',
+         type: 'class',
+         start: classStart,
+         end: end,
+         details: `Capacity: ${cls.capacity}`,
+         color: classType?.color || 'bg-blue-50 text-blue-700 border-blue-200'
+       });
+    }
   });
 
   return events.sort((a, b) => a.start.getTime() - b.start.getTime());
@@ -269,7 +263,8 @@ const FacilityScheduleView = ({ currentDate, setCurrentDate }: { currentDate: Da
                            <div className={cn("absolute left-[13px] top-5 h-2 w-2 rounded-full border-2 border-white ring-1 ring-slate-300", 
                               evt.type === 'arrival' ? 'bg-green-500 ring-green-200' : 
                               evt.type === 'departure' ? 'bg-amber-500 ring-amber-200' :
-                              evt.type === 'service' ? 'bg-purple-500 ring-purple-200' : 'bg-blue-500 ring-blue-200'
+                              evt.type === 'service' ? 'bg-purple-500 ring-purple-200' : 
+                              evt.type === 'class' ? 'bg-pink-500 ring-pink-200' : 'bg-blue-500 ring-blue-200'
                            )}></div>
                            
                            <div className="flex justify-between items-start">
