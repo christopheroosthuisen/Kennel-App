@@ -1,9 +1,9 @@
 
-import React, { useRef, useState, useEffect } from 'react';
-import { X, Printer, Phone, AlertTriangle, Info, MapPin, Calendar, Activity, Utensils, Edit2, Save, Plus, Trash2 } from 'lucide-react';
-import { Modal, Button, Badge, cn, Textarea, Input, Label } from './Common';
+import React, { useRef } from 'react';
+import { X, Printer, Phone, AlertTriangle, Info, MapPin, Calendar, Activity, Utensils } from 'lucide-react';
+import { Modal, Button, Badge, cn } from './Common';
 import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS } from '../constants';
-import { ReservationStatus, Medication } from '../types';
+import { ReservationStatus } from '../types';
 
 interface RunCardProps {
   reservationId: string;
@@ -15,28 +15,6 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
   const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
   const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
   const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
-
-  // Local state for editing
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState({
-    weight: 0,
-    feedingInstructions: '',
-    behaviorNotes: '',
-    reservationNotes: '',
-    medications: [] as Medication[]
-  });
-
-  useEffect(() => {
-    if (pet && reservation) {
-      setEditedData({
-        weight: pet.weight,
-        feedingInstructions: pet.feedingInstructions,
-        behaviorNotes: pet.behaviorNotes || '',
-        reservationNotes: reservation.notes || '',
-        medications: pet.medications ? [...pet.medications] : []
-      });
-    }
-  }, [pet, reservation]);
 
   if (!reservation || !pet || !owner) return null;
 
@@ -51,65 +29,20 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
   }
 
   const handlePrint = () => {
-    setIsEditing(false);
-    setTimeout(() => window.print(), 100);
-  };
-
-  const handleSave = () => {
-    // In a real app, this would API call to update Pet and Reservation
-    // For now, we just exit edit mode, keeping the local state changes visible
-    setIsEditing(false);
-  };
-
-  const updateMed = (index: number, field: keyof Medication, value: any) => {
-    const newMeds = [...editedData.medications];
-    newMeds[index] = { ...newMeds[index], [field]: value };
-    setEditedData({ ...editedData, medications: newMeds });
-  };
-
-  const removeMed = (index: number) => {
-    const newMeds = editedData.medications.filter((_, i) => i !== index);
-    setEditedData({ ...editedData, medications: newMeds });
-  };
-
-  const addMed = () => {
-    const newMed: Medication = {
-      id: `new-${Date.now()}`,
-      name: '',
-      dosage: '',
-      frequency: '',
-      instructions: '',
-      active: true
-    };
-    setEditedData({ ...editedData, medications: [...editedData.medications, newMed] });
+    window.print();
   };
 
   // Determine Alert Level
   const hasAggression = pet.alerts.some(a => a.toLowerCase().includes('aggressive') || a.toLowerCase().includes('caution'));
-  const hasMeds = editedData.medications.length > 0;
+  const hasMeds = pet.alerts.some(a => a.toLowerCase().includes('meds'));
   const isEscapeArtist = pet.alerts.some(a => a.toLowerCase().includes('escape'));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Run Card Preview" size="xl">
       <div className="flex flex-col h-full">
         {/* Toolbar - Hidden when printing */}
-        <div className="flex justify-between items-center mb-4 print:hidden bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <div className="flex items-center gap-4">
-             <p className="text-sm text-slate-500">Previewing Run Card for <strong>{pet.name}</strong></p>
-             <div className="h-4 w-px bg-slate-300"></div>
-             {!isEditing ? (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
-                   <Edit2 size={14}/> Edit Details
-                </Button>
-             ) : (
-                <div className="flex gap-2">
-                   <Button variant="primary" size="sm" onClick={handleSave} className="gap-2 bg-green-600 hover:bg-green-700 border-none">
-                      <Save size={14}/> Save Changes
-                   </Button>
-                   <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                </div>
-             )}
-          </div>
+        <div className="flex justify-between items-center mb-4 print:hidden">
+          <p className="text-sm text-slate-500">Previewing Run Card for <strong>{pet.name}</strong></p>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Close</Button>
             <Button onClick={handlePrint} className="gap-2"><Printer size={16}/> Print Card</Button>
@@ -193,19 +126,7 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                       <li className="flex justify-between"><span className="text-slate-500">Breed:</span> <span className="font-bold">{pet.breed}</span></li>
                       <li className="flex justify-between"><span className="text-slate-500">Sex:</span> <span className="font-bold">{pet.gender === 'M' ? 'Male' : 'Female'} / {pet.fixed ? 'Altered' : 'Intact'}</span></li>
                       <li className="flex justify-between"><span className="text-slate-500">Age:</span> <span className="font-bold">{ageYears} yrs, {ageMonths} mos</span></li>
-                      <li className="flex justify-between items-center">
-                         <span className="text-slate-500">Weight:</span> 
-                         {isEditing ? (
-                            <Input 
-                               type="number" 
-                               value={editedData.weight} 
-                               onChange={(e) => setEditedData({...editedData, weight: parseFloat(e.target.value)})}
-                               className="h-6 w-20 text-right font-bold py-0" 
-                            />
-                         ) : (
-                            <span className="font-bold">{editedData.weight} lbs</span>
-                         )}
-                      </li>
+                      <li className="flex justify-between"><span className="text-slate-500">Weight:</span> <span className="font-bold">{pet.weight} lbs</span></li>
                       <li className="flex justify-between"><span className="text-slate-500">Color:</span> <span className="font-bold">{pet.color || 'N/A'}</span></li>
                    </ul>
                 </section>
@@ -251,78 +172,37 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
                    </div>
                    <div className="space-y-4 text-sm">
                       <div>
-                         <span className="font-bold text-slate-700 block mb-1">Temperament / Notes:</span>
-                         {isEditing ? (
-                            <Textarea 
-                               value={editedData.behaviorNotes}
-                               onChange={(e) => setEditedData({...editedData, behaviorNotes: e.target.value})}
-                               className="text-sm min-h-[80px]"
-                            />
-                         ) : (
-                            <span>{editedData.behaviorNotes || "Standard friendly behavior."}</span>
-                         )}
+                         <span className="font-bold text-slate-700 block">Temperament:</span>
+                         <span>{pet.behaviorNotes || "Standard friendly behavior."}</span>
                       </div>
-                      {!isEditing && (
-                        <>
-                           <div>
-                              <span className="font-bold text-slate-700 block">Triggers / Fears:</span>
-                              <span>Thunderstorms, Vacuums</span>
-                           </div>
-                           <div>
-                              <span className="font-bold text-slate-700 block">Occupation / Habits:</span>
-                              <span>Loves fetch, Ball obsessed</span>
-                           </div>
-                        </>
-                      )}
+                      <div>
+                         <span className="font-bold text-slate-700 block">Triggers / Fears:</span>
+                         <span>Thunderstorms, Vacuums</span>
+                      </div>
+                      <div>
+                         <span className="font-bold text-slate-700 block">Occupation / Habits:</span>
+                         <span>Loves fetch, Ball obsessed</span>
+                      </div>
                    </div>
                 </section>
 
                 <section>
                    <h3 className="text-xs font-bold uppercase text-slate-400 mb-2 border-b border-slate-100 pb-1">Notes</h3>
-                   {isEditing ? (
-                      <Textarea 
-                         value={editedData.reservationNotes}
-                         onChange={(e) => setEditedData({...editedData, reservationNotes: e.target.value})}
-                         className="text-sm bg-yellow-50 border-yellow-200"
-                      />
-                   ) : (
-                      <div className="bg-yellow-50 border border-yellow-100 p-3 rounded min-h-[100px] text-sm text-slate-800">
-                         {editedData.reservationNotes ? editedData.reservationNotes : <span className="text-slate-400 italic">No reservation notes.</span>}
-                      </div>
-                   )}
+                   <div className="bg-yellow-50 border border-yellow-100 p-3 rounded min-h-[100px] text-sm text-slate-800">
+                      {reservation.notes ? reservation.notes : <span className="text-slate-400 italic">No reservation notes.</span>}
+                   </div>
                 </section>
 
-                {(isEditing || (editedData.medications && editedData.medications.length > 0)) && (
+                {pet.medications && pet.medications.length > 0 && (
                    <section>
-                      <div className="flex justify-between items-center mb-2 border-b border-red-100 pb-1">
-                         <h3 className="text-xs font-bold uppercase text-red-500 flex items-center gap-1"><Activity size={14}/> Medications</h3>
-                         {isEditing && <Button size="sm" variant="ghost" className="h-6 text-red-600" onClick={addMed}><Plus size={12}/> Add</Button>}
-                      </div>
-                      
+                      <h3 className="text-xs font-bold uppercase text-red-500 mb-2 border-b border-red-100 pb-1 flex items-center gap-1"><Activity size={14}/> Medications</h3>
                       <ul className="text-sm space-y-2">
-                         {editedData.medications.map((med, i) => (
-                            <li key={i} className="bg-red-50 p-2 rounded border border-red-100 relative group">
-                               {isEditing ? (
-                                  <div className="space-y-2">
-                                     <div className="flex gap-2">
-                                        <Input placeholder="Med Name" value={med.name} onChange={(e) => updateMed(i, 'name', e.target.value)} className="h-7 text-xs bg-white" />
-                                        <Input placeholder="Dosage" value={med.dosage} onChange={(e) => updateMed(i, 'dosage', e.target.value)} className="h-7 text-xs w-24 bg-white" />
-                                     </div>
-                                     <div className="flex gap-2">
-                                        <Input placeholder="Freq" value={med.frequency} onChange={(e) => updateMed(i, 'frequency', e.target.value)} className="h-7 text-xs w-32 bg-white" />
-                                        <Input placeholder="Instructions" value={med.instructions} onChange={(e) => updateMed(i, 'instructions', e.target.value)} className="h-7 text-xs bg-white" />
-                                     </div>
-                                     <button onClick={() => removeMed(i)} className="absolute top-1 right-1 text-red-400 hover:text-red-700 bg-white rounded-full p-0.5"><X size={12}/></button>
-                                  </div>
-                               ) : (
-                                  <>
-                                     <div className="font-bold text-red-900">{med.name} - {med.dosage}</div>
-                                     <div className="text-red-700">{med.frequency} • {med.instructions}</div>
-                                  </>
-                               )}
+                         {pet.medications.map((med, i) => (
+                            <li key={i} className="bg-red-50 p-2 rounded border border-red-100">
+                               <div className="font-bold text-red-900">{med.name} - {med.dosage}</div>
+                               <div className="text-red-700">{med.frequency} • {med.instructions}</div>
                             </li>
                          ))}
-                         {editedData.medications.length === 0 && isEditing && <div className="text-xs text-slate-400 italic text-center p-2">No medications listed. Add one if needed.</div>}
                       </ul>
                    </section>
                 )}
@@ -337,16 +217,7 @@ export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) =
              </div>
              <div className="p-6 pt-4">
                 <div className="text-sm font-medium text-slate-700 mb-4 bg-slate-50 p-3 rounded border border-slate-200">
-                   <span className="font-bold text-slate-900 mr-2">General:</span> 
-                   {isEditing ? (
-                      <Input 
-                         value={editedData.feedingInstructions} 
-                         onChange={(e) => setEditedData({...editedData, feedingInstructions: e.target.value})}
-                         className="inline-block w-full mt-1 bg-white" 
-                      />
-                   ) : (
-                      <span>{editedData.feedingInstructions}</span>
-                   )}
+                   <span className="font-bold text-slate-900">General:</span> {pet.feedingInstructions}
                 </div>
 
                 <div className="w-full border border-slate-300 rounded-sm overflow-hidden">

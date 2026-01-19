@@ -485,7 +485,12 @@ export const Dashboard = () => {
                                                <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700" 
                                                   onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
                                                >
-                                                  <FileText size={16} className="text-slate-400"/> Run Card
+                                                  <FileText size={16} className="text-slate-400"/> Create Run Card
+                                               </button>
+                                               <button className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700"
+                                                  onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
+                                               >
+                                                  <Printer size={16} className="text-slate-400"/> Print Run Card
                                                </button>
                                             </div>
                                             

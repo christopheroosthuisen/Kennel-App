@@ -225,7 +225,7 @@ export const Reservations = () => {
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 rounded flex items-center gap-3 text-slate-700 transition-colors"
                                   onClick={() => { setRunCardReservationId(res.id); setActiveActionMenu(null); }}
                                 >
-                                    <FileText size={16} className="text-slate-400"/> Run Card
+                                    <FileText size={16} className="text-slate-400"/> Create Run Card
                                 </button>
                             </div>
                             <div className="h-px bg-slate-100 my-1"/>
@@ -289,15 +289,6 @@ export const Reservations = () => {
                <Select className="mt-1">
                   <option>All Statuses</option>
                   {Object.values(ReservationStatus).map(s => <option key={s}>{s}</option>)}
-               </Select>
-            </div>
-            <div>
-               <Label>Facility / Zone</Label>
-               <Select className="mt-1">
-                  <option>All Zones</option>
-                  <option>Big Dog Run</option>
-                  <option>Small Dog Room</option>
-                  <option>Cat Condo</option>
                </Select>
             </div>
             <div className="flex justify-between pt-4 border-t border-slate-100">

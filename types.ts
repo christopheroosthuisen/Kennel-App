@@ -16,31 +16,6 @@ export enum ServiceType {
   Training = 'Training'
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'Admin' | 'Manager' | 'Staff';
-  orgId?: string;
-  onboarded: boolean;
-  avatarUrl?: string;
-}
-
-export interface Organization {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  timezone: string;
-  description: string;
-  welcomeMessage: string;
-  capacity: {
-    runs: number;
-    suites: number;
-    playrooms: number;
-  };
-}
-
 export interface Owner {
   id: string;
   name: string;
@@ -70,13 +45,6 @@ export interface FileAttachment {
   url: string;
 }
 
-export interface GroomingPreferences {
-  bladeSetting: string;
-  shampoo: string;
-  frequency: string;
-  handlingNotes: string;
-}
-
 export interface Pet {
   id: string;
   ownerId: string;
@@ -88,7 +56,7 @@ export interface Pet {
   fixed: boolean;
   color?: string;
   microchip?: string;
-  alerts: string[];
+  alerts: string[]; // e.g. "Aggressive", "Meds"
   vaccineStatus: 'Valid' | 'Expiring' | 'Expired';
   vaccines?: Vaccine[];
   medications?: Medication[];
@@ -96,7 +64,6 @@ export interface Pet {
   vet: string;
   feedingInstructions: string;
   behaviorNotes?: string;
-  grooming?: GroomingPreferences;
 }
 
 export interface Vaccine {
@@ -121,14 +88,13 @@ export interface Reservation {
   id: string;
   petId: string;
   ownerId: string;
-  orgId: string;
   type: ServiceType;
   status: ReservationStatus;
-  checkIn: string;
-  checkOut: string;
+  checkIn: string; // ISO Date
+  checkOut: string; // ISO Date
   lodging?: string;
   notes?: string;
-  services: string[];
+  services: string[]; // Add-on names
   isPreChecked?: boolean;
   price?: number;
 }
@@ -180,18 +146,11 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'error' | 'message';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  timestamp: string;
-  read: boolean;
-  relatedPetId?: string;
-  relatedOwnerId?: string;
-  actionUrl?: string;
-  comments: NotificationComment[];
+export interface DashboardCount {
+  label: string;
+  count: number;
+  icon: any;
+  color: string;
 }
 
 export interface NotificationComment {
@@ -202,6 +161,21 @@ export interface NotificationComment {
   timestamp: string;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error' | 'message';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  timestamp: string;
+  read: boolean;
+  relatedPetId?: string;
+  relatedOwnerId?: string;
+  actionUrl?: string; // Where to go if clicked (e.g., reservation page)
+  comments: NotificationComment[];
+}
+
+// Admin Config Types
 export interface ServiceConfig {
   id: string;
   name: string;
@@ -212,35 +186,10 @@ export interface ServiceConfig {
   enabled: boolean;
 }
 
-export interface Workflow {
-  id: string;
-  name: string;
-  description: string;
-  environment: 'draft' | 'staging' | 'production';
-  isEnabled: boolean;
-  steps: WorkflowStep[];
-  trigger: {
-    type: string;
-    details: string;
-  };
-  stats: {
-    runsLast24h: number;
-    successRate: number;
-  };
-  lastEdited: string;
-}
-
-export interface WorkflowStep {
-  id: string;
-  type: string;
-  name: string;
-  config: any;
-}
-
 export interface PricingRule {
   id: string;
   name: string;
-  type: string;
+  type: 'LateCheckOut' | 'Holiday' | 'MultiPet' | 'ExtendedStay';
   amount: number;
   isPercentage: boolean;
   triggerCondition: string;
@@ -250,9 +199,9 @@ export interface PricingRule {
 export interface EmailTemplate {
   id: string;
   name: string;
-  trigger: string;
   subject: string;
   body: string;
+  trigger: 'ReservationRequested' | 'ReservationConfirmed' | 'CheckOut' | 'VaccineExpired';
 }
 
 export interface TaxRate {
@@ -267,8 +216,8 @@ export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: string;
-  status: string;
+  role: 'Admin' | 'Manager' | 'Staff';
+  status: 'Active' | 'Inactive';
   lastLogin: string;
 }
 
@@ -280,11 +229,38 @@ export interface AutomationRule {
   enabled: boolean;
 }
 
+// --- Workflow Engine Types (Block 1-4) ---
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  environment: 'draft' | 'staging' | 'production';
+  isEnabled: boolean;
+  trigger: {
+    type: 'Event' | 'Schedule' | 'Webhook';
+    details: string;
+  };
+  steps: WorkflowStep[];
+  stats: {
+    runsLast24h: number;
+    successRate: number;
+  };
+  lastEdited: string;
+}
+
+export interface WorkflowStep {
+  id: string;
+  type: 'Action' | 'Delay' | 'Condition' | 'Approval' | 'AI';
+  name: string;
+  config: any;
+}
+
 export interface WorkflowRun {
   id: string;
   workflowId: string;
   workflowName: string;
-  status: 'Completed' | 'Failed' | 'Waiting for Approval' | 'Running';
+  status: 'Running' | 'Completed' | 'Failed' | 'Waiting for Approval';
   startedAt: string;
   currentStep?: string;
 }
@@ -293,8 +269,8 @@ export interface WorkflowTemplate {
   id: string;
   name: string;
   description: string;
-  category: string;
-  difficulty: string;
+  category: 'Messaging' | 'Operations' | 'Revenue';
+  difficulty: 'Beginner' | 'Advanced';
   stepsCount: number;
 }
 
@@ -302,7 +278,7 @@ export interface WorkflowVariable {
   id: string;
   key: string;
   value: string;
-  type: string;
+  type: 'String' | 'Number' | 'Secret';
   isEncrypted: boolean;
 }
 
@@ -321,6 +297,6 @@ export interface ApprovalRequest {
   workflowName: string;
   requestedAt: string;
   description: string;
-  status: string;
+  status: 'Pending' | 'Approved' | 'Denied';
   dataPayload: any;
 }

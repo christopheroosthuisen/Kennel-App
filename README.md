@@ -1,52 +1,20 @@
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-# Partners Ops
+# Run and deploy your AI Studio app
 
-The Operating System for Modern Kennels.
+This contains everything you need to run your app locally.
 
-## Development Setup
+View your app in AI Studio: https://ai.studio/apps/drive/13MjoGodBstN0QHV2IwMOTpMdreIjCE_4
 
-This project consists of a React frontend and a Node.js backend.
+## Run Locally
 
-### Prerequisites
+**Prerequisites:**  Node.js
 
-- Node.js (v18+)
-- npm
 
-### Quick Start
-
-1.  **Install Frontend Dependencies**
-    ```bash
-    npm install
-    ```
-
-2.  **Install Backend Dependencies**
-    ```bash
-    npm --prefix server install
-    ```
-
-3.  **Start Development Server (Both Client & Server)**
-    ```bash
-    npm run dev:all
-    ```
-
-The application will be available at:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8787
-
-### Individual Commands
-
-- `npm run dev:client`: Start only the React frontend.
-- `npm run dev:server`: Start only the Node.js backend.
-
-### Project Structure
-
-- `/`: React Frontend (Vite, Tailwind, Zustand)
-- `/server`: Node.js Backend (HTTP, File-based JSON DB)
-- `/src/shared`: Shared types and utilities
-
-### API & Authentication
-
-The local server uses a file-based JSON database located in `server/data/db.json`.
-Default admin credentials (seeded on first run):
-- Email: `admin@local`
-- Password: `admin123`
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
