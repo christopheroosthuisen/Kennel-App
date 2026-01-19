@@ -36,7 +36,7 @@ const EmptyState = ({ title, message }: { title: string, message: string }) => (
   </div>
 );
 
-// --- Staff Ratios View (Moved from Team.tsx) ---
+// --- Staff Ratios View ---
 
 interface StaffRatio {
   serviceType: string;
@@ -125,7 +125,6 @@ const StaffRatiosView = () => {
 
 const PackageModal = ({ isOpen, onClose, pkg }: { isOpen: boolean, onClose: () => void, pkg?: Package | null }) => {
   const [activeTab, setActiveTab] = useState('details');
-  // Local state would ideally be initialized from 'pkg' prop
   
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={pkg ? "Edit Package" : "Create Package"} size="lg">
@@ -457,8 +456,6 @@ const PackagesMembershipsView = () => {
       </div>
    );
 };
-
-// ... (Rest of existing sub-components: AuditLogView, UsageQuotasView, etc. stay the same, but re-exporting structure for clarity) ...
 
 const AuditLogView = () => (
    <div className="space-y-6 animate-in fade-in duration-300">
@@ -1009,39 +1006,29 @@ const FacilityView = () => {
         <SectionHeader title="Facility Information" description="General settings for location, hours, and capacity." />
 
         <Card className="p-6 space-y-6">
-           <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-2">Location Details</h3>
+           <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4">Location Details</h3>
            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-1"><Label>Facility Name</Label><Input defaultValue="Partners Dogs Downtown" /></div>
-               <div className="space-y-1"><Label>Contact Email</Label><Input defaultValue="manager@partnersdogs.com" /></div>
-               <div className="space-y-1"><Label>Phone</Label><Input defaultValue="555-0123" /></div>
-               <div className="space-y-1"><Label>Timezone</Label><Select><option>America/Phoenix</option></Select></div>
-               <div className="col-span-2 space-y-1"><Label>Address</Label><Input defaultValue="123 Dogwood Lane, Phoenix, AZ" /></div>
+              <div><Label>Facility Name</Label><Input defaultValue="Partners Dog Training"/></div>
+              <div><Label>Timezone</Label><Select><option>Arizona (UTC-7)</option></Select></div>
+              <div className="col-span-2"><Label>Address</Label><Input defaultValue="123 Dogwood Lane, Phoenix, AZ 85001"/></div>
+              <div><Label>Phone</Label><Input defaultValue="(555) 123-4567"/></div>
+              <div><Label>Email</Label><Input defaultValue="info@partnersdogs.com"/></div>
+              <div><Label>Website</Label><Input defaultValue="www.partnersdogs.com"/></div>
            </div>
         </Card>
 
         <Card className="p-6 space-y-6">
-           <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-              <h3 className="font-bold text-slate-800">Operational Hours</h3>
-              <Button variant="ghost" size="sm" className="text-indigo-600 gap-1"><Sparkles size={14}/> Auto-configure Holidays</Button>
-           </div>
-           
-           <div className="space-y-3">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
-                 <div key={day} className="flex items-center gap-4">
-                    <div className="w-24 font-medium text-sm text-slate-700">{day}</div>
-                    <Switch checked={true} onCheckedChange={() => {}} />
-                    <Input type="time" defaultValue="07:00" className="w-32" />
-                    <span className="text-slate-400 text-sm">to</span>
-                    <Input type="time" defaultValue="19:00" className="w-32" />
-                 </div>
-              ))}
-              {['Saturday', 'Sunday'].map(day => (
-                 <div key={day} className="flex items-center gap-4">
-                    <div className="w-24 font-medium text-sm text-slate-700">{day}</div>
-                    <Switch checked={day === 'Saturday'} onCheckedChange={() => {}} />
-                    <Input type="time" defaultValue="09:00" className="w-32" disabled={day !== 'Saturday'} />
-                    <span className="text-slate-400 text-sm">to</span>
-                    <Input type="time" defaultValue="17:00" className="w-32" disabled={day !== 'Saturday'} />
+           <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4">Operating Hours</h3>
+           <div className="space-y-4">
+              {['Monday - Friday', 'Saturday', 'Sunday'].map(day => (
+                 <div key={day} className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700 w-32">{day}</span>
+                    <div className="flex gap-2 items-center">
+                       <Input type="time" defaultValue="07:00" className="w-32"/>
+                       <span className="text-slate-400">-</span>
+                       <Input type="time" defaultValue="19:00" className="w-32"/>
+                    </div>
+                    <Switch checked={true} onCheckedChange={()=>{}} />
                  </div>
               ))}
            </div>

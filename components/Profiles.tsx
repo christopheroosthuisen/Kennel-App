@@ -58,8 +58,8 @@ export const Profiles = () => {
     });
   };
 
-  const filteredOwners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(search.toLowerCase()) || o.email.includes(search));
-  const filteredPets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredOwners = MOCK_OWNERS.filter(o => o?.name?.toLowerCase().includes(search.toLowerCase()) || o?.email?.includes(search));
+  const filteredPets = MOCK_PETS.filter(p => p?.name?.toLowerCase().includes(search.toLowerCase()));
 
   const sortedOwners = getSortedData(filteredOwners);
   const sortedPets = getSortedData(filteredPets);

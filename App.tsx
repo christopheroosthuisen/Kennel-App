@@ -17,7 +17,8 @@ import { TeamManagement } from './components/Team';
 import { InternalChat } from './components/InternalChat';
 import { CareDashboard } from './components/CareDashboard';
 import { Marketing } from './components/Marketing';
-import { ServiceDashboard } from './components/ServiceDashboard'; // Import new dashboard
+import { ServiceDashboard } from './components/ServiceDashboard'; 
+import { Veterinarians } from './components/Veterinarians'; // Added route
 import { CommunicationProvider, MessagesPage } from './components/Messaging';
 import { TeamChatProvider } from './components/TeamChatContext';
 
@@ -42,6 +43,7 @@ const App = () => {
               <Route path="/care" element={<CareDashboard />} />
               <Route path="/services" element={<ServiceDashboard />} />
               <Route path="/marketing" element={<Marketing />} />
+              <Route path="/veterinarians" element={<Veterinarians />} />
               <Route path="/automations" element={<Automations />} />
               <Route path="/report-cards" element={<ReportCards />} />
               <Route path="/reports" element={<Reports />} />

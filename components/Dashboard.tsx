@@ -354,6 +354,7 @@ export const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {currentList.length > 0 ? currentList.map((res) => {
+                    if (!res) return null;
                     const pet = MOCK_PETS.find(p => p?.id === res.petId);
                     const owner = MOCK_OWNERS.find(o => o?.id === res.ownerId);
                     

@@ -170,7 +170,13 @@ export const CareDashboard = () => {
   );
 };
 
-const CareCard = ({ task, onStatusChange, viewMode }: { task: CareTask, onStatusChange: (id: string, status: CareTask['status']) => void, viewMode: 'prep' | 'distribution' }) => {
+interface CareCardProps {
+  task: CareTask;
+  onStatusChange: (id: string, status: CareTask['status']) => void;
+  viewMode: 'prep' | 'distribution';
+}
+
+const CareCard: React.FC<CareCardProps> = ({ task, onStatusChange, viewMode }) => {
    const pet = MOCK_PETS.find(p => p.id === task.petId);
    
    // Card Colors based on type/warning

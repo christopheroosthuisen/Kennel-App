@@ -61,7 +61,9 @@ export interface Pet {
   vaccines?: Vaccine[];
   medications?: Medication[];
   photoUrl: string;
-  vet: string;
+  vet: string; // Legacy string
+  vetClinicId?: string; // Link to new Vet Platform
+  veterinarianId?: string; // Link to specific doctor
   feedingInstructions: string;
   behaviorNotes?: string;
   activeProgram?: string; // e.g., "Puppy Jump Start"
@@ -516,4 +518,29 @@ export interface AiAgent {
   status: 'Idle' | 'Running' | 'Completed' | 'Failed';
   lastRun?: string;
   actionButtonText: string;
+}
+
+// --- Vet Platform Types ---
+
+export interface VetClinic {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email?: string;
+  website?: string;
+  primaryContactName?: string;
+  emergency: boolean;
+  tags: string[];
+  autoRequestRecords: boolean;
+  lastRecordRequest?: string;
+}
+
+export interface Veterinarian {
+  id: string;
+  clinicId: string;
+  name: string;
+  specialty?: string;
+  email?: string; // Direct line if different
+  phone?: string; // Direct line if different
 }

@@ -6,7 +6,7 @@ import {
   Sparkles, X, Plus, LogOut, Command, GitBranch, MessageSquare,
   Layers, Users, PieChart, ChevronDown, CalendarRange, BarChart3, Briefcase, Clock,
   ArrowRight, GraduationCap, MessageCircle, HeartPulse, Megaphone,
-  CheckSquare, Play, Bot, Terminal
+  CheckSquare, Play, Bot, Terminal, Stethoscope
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn, Button, Input, Badge, Tabs, Card } from './Common';
@@ -48,6 +48,7 @@ const MENU_ITEMS: NavItemConfig[] = [
       { label: 'Directory', path: '/owners-pets', icon: Dog },
       { label: 'Communication', path: '/messages', icon: MessageSquare },
       { label: 'Marketing Hub', path: '/marketing', icon: Megaphone },
+      { label: 'Veterinarians', path: '/veterinarians', icon: Stethoscope },
     ]
   },
   { 
@@ -72,7 +73,6 @@ const MENU_ITEMS: NavItemConfig[] = [
   },
 ];
 
-// ... (Rest of NavLink and NavGroup - unchanged from previous version) ...
 const NavLink = ({ icon: Icon, label, path, collapsed, active, badge }: { icon: any, label: string, path: string, collapsed: boolean, active: boolean, badge?: number }) => (
   <Link 
     to={path}
@@ -246,6 +246,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
 
   // Run Agent Simulation
   const runAgent = (agent: AiAgent) => {
+    if (!agent) return;
     setRunningAgent(agent.id);
     setAgentLogs([`Initializing ${agent.name}...`]);
     setAgentResult(null);
@@ -297,22 +298,33 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     }, 800);
   };
 
-  // Filter Logic for Quick Nav (Same as before)
+  // Filter Logic for Quick Nav
   const searchResults = useMemo(() => {
     if (!searchTerm) return null;
     const term = searchTerm.toLowerCase();
+    
     const pages = MENU_ITEMS.flatMap(item => {
       const items = item.type === 'group' ? item.children || [] : [item];
       return items.filter(i => i.label.toLowerCase().includes(term));
     });
-    const owners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(term) || o.email.includes(term));
-    const pets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(term));
+    
+    const owners = MOCK_OWNERS.filter(o => o?.name?.toLowerCase().includes(term) || o?.email?.toLowerCase().includes(term));
+    
+    const pets = MOCK_PETS.filter(p => p?.name?.toLowerCase().includes(term));
+    
     const reservations = MOCK_RESERVATIONS.filter(r => {
+      if (!r) return false;
       const pet = MOCK_PETS.find(p => p?.id === r.petId);
       const owner = MOCK_OWNERS.find(o => o?.id === r.ownerId);
-      return (r.id.toLowerCase().includes(term) || pet?.name.toLowerCase().includes(term) || owner?.name.toLowerCase().includes(term));
+      return (
+        (r.id && r.id.toLowerCase().includes(term)) || 
+        (pet?.name || '').toLowerCase().includes(term) || 
+        (owner?.name || '').toLowerCase().includes(term)
+      );
     });
-    const channels = MOCK_CHANNELS.filter(c => c.name.toLowerCase().includes(term));
+    
+    const channels = MOCK_CHANNELS.filter(c => c?.name?.toLowerCase().includes(term));
+    
     return { pages, owners, pets, reservations, channels };
   }, [searchTerm]);
 
@@ -601,7 +613,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
              </div>
              
              <div className="p-2 max-h-[60vh] overflow-y-auto">
-                {/* Search Results Rendering (Same as before) */}
+                {/* Search Results Rendering */}
                 {searchResults ? (
                   <div className="space-y-4">
                     {/* Pages */}

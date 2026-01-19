@@ -212,9 +212,9 @@ export const ServiceManager = ({
 // --- New Functionality Modals ---
 
 export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
+  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
 
   // Mock balance check
   const balance = owner?.balance || 0;
@@ -296,8 +296,8 @@ export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
+  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
   const [selectedUnit, setSelectedUnit] = useState(reservation?.lodging || '');
 
   const availableUnits = MOCK_UNITS.filter(u => u.status === 'Active');
@@ -344,7 +344,7 @@ export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p.id === id);
+  const pet = MOCK_PETS.find(p => p?.id === id);
   const [selectedTag, setSelectedTag] = useState('Note');
   const [note, setNote] = useState('');
 
@@ -409,9 +409,9 @@ export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 // --- Main Edit Modal ---
 
 export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
+  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
   
   const [activeTab, setActiveTab] = useState('general');
   // Local state for edits
@@ -577,7 +577,7 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
 // --- Re-export other modals with minor improvements ---
 
 export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p.id === id);
+  const pet = MOCK_PETS.find(p => p?.id === id);
   if (!pet) return null;
 
   return (
@@ -632,7 +632,7 @@ export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const owner = MOCK_OWNERS.find(o => o.id === id);
+  const owner = MOCK_OWNERS.find(o => o?.id === id);
   if (!owner) return null;
 
   return (
@@ -670,8 +670,8 @@ export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-   const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-   const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+   const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
+   const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
    
    const [selectedServices, setSelectedServices] = useState<string[]>(reservation?.services || []);
 

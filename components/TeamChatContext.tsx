@@ -26,7 +26,7 @@ export const useTeamChat = () => {
 // --- Mock Current User ---
 const CURRENT_USER_ID = 'u1'; 
 
-export const TeamChatProvider = ({ children }: { children: ReactNode }) => {
+export const TeamChatProvider = ({ children }: { children?: ReactNode }) => {
   const [channels, setChannels] = useState<InternalChannel[]>(MOCK_CHANNELS);
   const [messages, setMessages] = useState<InternalMessage[]>(MOCK_INTERNAL_MESSAGES);
   

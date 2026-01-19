@@ -33,7 +33,8 @@ const getEventsForDate = (date: Date): CalendarEvent[] => {
 
   // 1. Map Reservations to Events
   MOCK_RESERVATIONS.forEach(res => {
-    const pet = MOCK_PETS.find(p => p.id === res.petId);
+    if (!res) return;
+    const pet = MOCK_PETS.find(p => p?.id === res.petId);
     const checkIn = new Date(res.checkIn);
     const checkOut = new Date(res.checkOut);
 
@@ -79,9 +80,10 @@ const getEventsForDate = (date: Date): CalendarEvent[] => {
 
   // 2. Map Group Classes (from Shared Constants)
   MOCK_CLASS_SESSIONS.forEach(cls => {
+    if (!cls) return;
     const classStart = new Date(cls.startTime);
     if (classStart.toDateString() === dateStr) {
-       const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId);
+       const classType = MOCK_CLASS_TYPES.find(ct => ct?.id === cls.classTypeId);
        const end = new Date(classStart.getTime() + cls.durationMinutes * 60000);
        
        events.push({
@@ -346,7 +348,7 @@ const LodgingOccupancyView = ({ currentDate, setCurrentDate }: { currentDate: Da
                     new Date(r.checkIn) <= date && 
                     new Date(r.checkOut) >= date
                  );
-                 const pet = res ? MOCK_PETS.find(p => p.id === res.petId) : null;
+                 const pet = res ? MOCK_PETS.find(p => p?.id === res.petId) : null;
                  
                  // Determine cell style based on reservation part
                  const isCheckIn = res && new Date(res.checkIn).toDateString() === date.toDateString();

@@ -33,9 +33,9 @@ interface Payment {
 }
 
 export const EstimateModal = ({ reservationId, isOpen, onClose }: EstimateModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r?.id === reservationId);
+  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
   const { openDiscuss } = useTeamChat();
 
   const [isEditing, setIsEditing] = useState(false);
