@@ -12,9 +12,9 @@ interface RunCardProps {
 }
 
 export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r?.id === reservationId);
-  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
+  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
 
   if (!reservation || !pet || !owner) return null;
 

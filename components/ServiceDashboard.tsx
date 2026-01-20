@@ -16,9 +16,9 @@ const generateTasks = (): ServiceTask[] => {
 
   MOCK_RESERVATIONS.forEach(res => {
     // Only generate for checked-in or expected
-    if (res?.status !== ReservationStatus.CheckedIn && res?.status !== ReservationStatus.Expected) return;
+    if (res.status !== ReservationStatus.CheckedIn && res.status !== ReservationStatus.Expected) return;
 
-    const pet = MOCK_PETS.find(p => p?.id === res.petId);
+    const pet = MOCK_PETS.find(p => p.id === res.petId);
     
     // 1. Core Service Task
     if (res.type === ServiceType.Grooming) {
@@ -87,7 +87,7 @@ export const ServiceDashboard = () => {
   // Filter Logic
   const filteredTasks = useMemo(() => {
     return SERVICE_TASKS.filter(task => {
-      const pet = MOCK_PETS.find(p => p?.id === task.petId);
+      const pet = MOCK_PETS.find(p => p.id === task.petId);
       const matchesSearch = !search || 
          task.name.toLowerCase().includes(search.toLowerCase()) || 
          pet?.name.toLowerCase().includes(search.toLowerCase());
@@ -295,8 +295,8 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
-   const pet = MOCK_PETS.find(p => p?.id === task.petId);
-   const assignee = MOCK_USERS.find(u => u?.id === task.assignedTo);
+   const pet = MOCK_PETS.find(p => p.id === task.petId);
+   const assignee = MOCK_USERS.find(u => u.id === task.assignedTo);
    
    const hasAlerts = pet?.alerts && pet.alerts.length > 0;
 
@@ -358,8 +358,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
 
 const ServiceTaskModal = ({ task, onClose }: { task: ServiceTask | null, onClose: () => void }) => {
    if (!task) return null;
-   const pet = MOCK_PETS.find(p => p?.id === task.petId);
-   const owner = MOCK_OWNERS.find(o => o?.id === pet?.ownerId);
+   const pet = MOCK_PETS.find(p => p.id === task.petId);
+   const owner = MOCK_OWNERS.find(o => o.id === pet?.ownerId);
 
    return (
       <Modal isOpen={!!task} onClose={onClose} title="Service Details">

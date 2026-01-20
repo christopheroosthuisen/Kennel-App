@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Megaphone, Mail, MessageSquare, Phone, BarChart3, Settings, 
   Plus, Users, Send, Download, Filter, MoreHorizontal, Check, 
@@ -10,6 +10,7 @@ import {
 import { Card, Button, Input, Select, Badge, cn, Modal, Label, Textarea, Tabs, Switch, BulkActionBar } from './Common';
 import { MOCK_CAMPAIGNS, MOCK_CALL_LOGS, MOCK_CONNECTORS, MOCK_OWNERS, MOCK_EMAIL_TEMPLATES } from '../constants';
 import { MarketingCampaign, CallLog, MarketingConnector } from '../types';
+import { useSearchParams } from 'react-router-dom';
 
 // --- Dashboard View ---
 const MarketingDashboard = () => (
@@ -75,9 +76,13 @@ const MarketingDashboard = () => (
 );
 
 // --- Email Builder & Campaigns ---
-const EmailStudio = () => {
+const EmailStudio = ({ autoOpen }: { autoOpen: boolean }) => {
    const [isCreateOpen, setIsCreateOpen] = useState(false);
    const [activeStep, setActiveStep] = useState(1); // 1: Setup, 2: Audience, 3: Design, 4: Review
+
+   useEffect(() => {
+      if (autoOpen) setIsCreateOpen(true);
+   }, [autoOpen]);
 
    return (
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -242,9 +247,13 @@ const EmailStudio = () => {
 };
 
 // --- SMS Console ---
-const SMSConsole = () => {
+const SMSConsole = ({ autoOpen }: { autoOpen: boolean }) => {
    const [message, setMessage] = useState('');
    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+   useEffect(() => {
+      if (autoOpen) setIsCreateOpen(true);
+   }, [autoOpen]);
 
    return (
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -465,6 +474,17 @@ const ConnectorsAdmin = () => {
 
 export const Marketing = () => {
    const [activeTab, setActiveTab] = useState('dashboard');
+   const [searchParams] = useSearchParams();
+
+   // Handle Deep Links
+   useEffect(() => {
+      const action = searchParams.get('action');
+      if (action === 'new-email') {
+         setActiveTab('email');
+      } else if (action === 'new-sms') {
+         setActiveTab('sms');
+      }
+   }, [searchParams]);
 
    return (
       <div className="flex h-[calc(100vh-100px)] gap-6">
@@ -500,8 +520,8 @@ export const Marketing = () => {
          {/* Content Area */}
          <div className="flex-1 overflow-y-auto pr-2 pb-10">
             {activeTab === 'dashboard' && <MarketingDashboard />}
-            {activeTab === 'email' && <EmailStudio />}
-            {activeTab === 'sms' && <SMSConsole />}
+            {activeTab === 'email' && <EmailStudio autoOpen={searchParams.get('action') === 'new-email'} />}
+            {activeTab === 'sms' && <SMSConsole autoOpen={searchParams.get('action') === 'new-sms'} />}
             {activeTab === 'voice' && <CallTracking />}
             {activeTab === 'connectors' && <ConnectorsAdmin />}
          </div>

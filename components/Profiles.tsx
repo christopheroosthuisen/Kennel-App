@@ -4,14 +4,15 @@ import {
   Search, Phone, Mail, MapPin, Dog, Plus, AlertTriangle, FileText, Syringe, 
   History, User, CheckCircle, File, Download, MessageSquare, Edit2, Sparkles,
   Pill, Stethoscope, Paperclip, Calendar, Utensils, LayoutGrid, List as ListIcon, MoreHorizontal,
-  MessageCircle
+  MessageCircle, Building2, UploadCloud, Globe, Link as LinkIcon, Trash2
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
 import { EditOwnerModal, EditPetModal } from './EditModals';
 import { useCommunication } from './Messaging';
 import { useTeamChat } from './TeamChatContext';
-import { MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_INVOICES } from '../constants';
+import { MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_INVOICES, MOCK_VET_CLINICS } from '../constants';
+import { Pet, Vaccine } from '../types';
 
 export const Profiles = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,8 +59,8 @@ export const Profiles = () => {
     });
   };
 
-  const filteredOwners = MOCK_OWNERS.filter(o => o?.name?.toLowerCase().includes(search.toLowerCase()) || o?.email?.includes(search));
-  const filteredPets = MOCK_PETS.filter(p => p?.name?.toLowerCase().includes(search.toLowerCase()));
+  const filteredOwners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(search.toLowerCase()) || o.email.includes(search));
+  const filteredPets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   const sortedOwners = getSortedData(filteredOwners);
   const sortedPets = getSortedData(filteredPets);
@@ -326,6 +327,169 @@ export const Profiles = () => {
   );
 };
 
+// --- Medical Panel Component ---
+const MedicalPanel = ({ pet }: { pet: Pet }) => {
+   const clinic = MOCK_VET_CLINICS.find(c => c.id === pet.vetClinicId);
+   const [vaccines, setVaccines] = useState<Vaccine[]>(pet.vaccines || []);
+   const [isAddVaxOpen, setIsAddVaxOpen] = useState(false);
+
+   const handleAddVaccine = (e: React.FormEvent) => {
+      e.preventDefault();
+      // Logic would go here to add new vaccine
+      alert("Mock: Vaccine Added");
+      setIsAddVaxOpen(false);
+   };
+
+   return (
+      <div className="space-y-6">
+         {/* Vet Clinic Info */}
+         <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+               <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                     <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                        <Building2 size={20}/>
+                     </div>
+                     <div>
+                        <h4 className="font-bold text-slate-800 text-sm">Primary Care Clinic</h4>
+                        <div className="text-xs text-slate-500">{clinic ? clinic.name : 'No clinic linked'}</div>
+                     </div>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8">Change</Button>
+               </div>
+               
+               {clinic ? (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                     <div className="space-y-1">
+                        <div className="text-xs font-semibold text-slate-400 uppercase">Contact</div>
+                        <div className="flex items-center gap-2 text-slate-700"><Phone size={14} className="text-slate-400"/> {clinic.phone}</div>
+                        <div className="flex items-center gap-2 text-slate-700"><Mail size={14} className="text-slate-400"/> {clinic.email}</div>
+                     </div>
+                     <div className="space-y-1">
+                        <div className="text-xs font-semibold text-slate-400 uppercase">Location</div>
+                        <div className="flex items-start gap-2 text-slate-700">
+                           <MapPin size={14} className="text-slate-400 mt-0.5 shrink-0"/> 
+                           <span className="leading-tight">{clinic.address}</span>
+                        </div>
+                     </div>
+                     <div className="col-span-2 mt-2 pt-3 border-t border-slate-100 flex gap-2">
+                        <Button variant="outline" size="sm" className="w-full gap-2"><LinkIcon size={14}/> Request Records</Button>
+                        <Button variant="outline" size="sm" className="w-full gap-2"><Globe size={14}/> Website</Button>
+                     </div>
+                  </div>
+               ) : (
+                  <div className="text-center py-6 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-lg">
+                     No veterinary clinic associated.<br/>
+                     <span className="text-primary-600 cursor-pointer hover:underline">Link a Clinic</span>
+                  </div>
+               )}
+            </div>
+
+            {/* Quick Stats or Alerts */}
+            <div className="w-full md:w-64 space-y-3">
+               <Card className="p-4 bg-red-50 border-red-100">
+                  <h4 className="font-bold text-red-800 text-sm flex items-center gap-2"><AlertTriangle size={16}/> Critical Alerts</h4>
+                  <ul className="list-disc list-inside mt-2 text-xs text-red-700 space-y-1">
+                     {pet.vaccineStatus !== 'Valid' && <li>Vaccinations {pet.vaccineStatus}</li>}
+                     {pet.alerts.map(a => <li key={a}>{a}</li>)}
+                     {pet.vaccineStatus === 'Valid' && pet.alerts.length === 0 && <li className="text-slate-400 italic list-none">No active alerts.</li>}
+                  </ul>
+               </Card>
+               <Card className="p-4 bg-blue-50 border-blue-100">
+                  <h4 className="font-bold text-blue-800 text-sm flex items-center gap-2"><Pill size={16}/> Active Meds</h4>
+                  <div className="mt-2 text-xs text-blue-700">
+                     {pet.medications?.length ? `${pet.medications.length} active prescriptions.` : "No medications tracked."}
+                  </div>
+               </Card>
+            </div>
+         </div>
+
+         {/* Vaccination Table */}
+         <Card className="overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+               <h3 className="font-bold text-slate-800 flex items-center gap-2"><Syringe size={18} className="text-slate-500"/> Vaccination History</h3>
+               <Button size="sm" className="gap-2" onClick={() => setIsAddVaxOpen(true)}><Plus size={14}/> Add Vaccine</Button>
+            </div>
+            <table className="w-full text-left text-sm">
+               <thead className="bg-white text-slate-500 font-semibold border-b border-slate-100">
+                  <tr>
+                     <th className="px-6 py-3">Vaccine</th>
+                     <th className="px-6 py-3">Date Administered</th>
+                     <th className="px-6 py-3">Expiration Date</th>
+                     <th className="px-6 py-3">Status</th>
+                     <th className="px-6 py-3">Proof</th>
+                     <th className="px-6 py-3 text-right">Actions</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                  {vaccines.map(vax => (
+                     <tr key={vax.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 font-medium text-slate-800">{vax.name}</td>
+                        <td className="px-6 py-4 text-slate-600">{new Date(vax.dateAdministered).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 font-mono text-slate-700">{new Date(vax.dateExpires).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                           <Badge variant={vax.status === 'Valid' ? 'success' : vax.status === 'Expiring' ? 'warning' : 'danger'}>
+                              {vax.status}
+                           </Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                           {vax.fileUrl ? (
+                              <a href="#" className="flex items-center gap-1 text-primary-600 hover:underline text-xs">
+                                 <Paperclip size={12}/> View
+                              </a>
+                           ) : <span className="text-slate-400 text-xs italic">Missing</span>}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                           <Button variant="ghost" size="icon" className="h-8 w-8"><Edit2 size={14}/></Button>
+                        </td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </Card>
+
+         {/* File Upload Area */}
+         <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors cursor-pointer">
+            <UploadCloud size={32} className="mb-2 opacity-50"/>
+            <p className="text-sm font-medium text-slate-600">Upload Medical Records</p>
+            <p className="text-xs">Drag and drop PDF or Images here, or click to browse.</p>
+         </div>
+
+         {/* Add Vaccine Modal */}
+         <Modal isOpen={isAddVaxOpen} onClose={() => setIsAddVaxOpen(false)} title="Add Vaccination Record" size="sm">
+            <form onSubmit={handleAddVaccine} className="space-y-4">
+               <div>
+                  <Label>Vaccine Type</Label>
+                  <Select autoFocus>
+                     <option>Rabies</option>
+                     <option>Bordetella</option>
+                     <option>DHPP</option>
+                     <option>Influenza</option>
+                     <option>Other</option>
+                  </Select>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Administered</Label><Input type="date"/></div>
+                  <div><Label>Expires</Label><Input type="date"/></div>
+               </div>
+               <div>
+                  <Label>Verified By</Label>
+                  <Input placeholder="Staff Name"/>
+               </div>
+               <div>
+                  <Label>Upload Proof (Optional)</Label>
+                  <Input type="file"/>
+               </div>
+               <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
+                  <Button type="button" variant="ghost" onClick={() => setIsAddVaxOpen(false)}>Cancel</Button>
+                  <Button type="submit">Save Record</Button>
+               </div>
+            </form>
+         </Modal>
+      </div>
+   );
+};
+
 const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const owner = MOCK_OWNERS.find(o => o.id === id);
   const pets = MOCK_PETS.filter(p => p.ownerId === id);
@@ -514,7 +678,7 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                </div>
                <div className="p-3 bg-slate-50 rounded border border-slate-100">
                   <div className="text-xs text-slate-400 uppercase font-bold">Vet</div>
-                  <div className="font-semibold mt-1 text-slate-800">{pet.vet}</div>
+                  <div className="font-semibold mt-1 text-slate-800 truncate">{pet.vet}</div>
                </div>
                <div className="p-3 bg-slate-50 rounded border border-slate-100">
                   <div className="text-xs text-slate-400 uppercase font-bold">Alerts</div>
@@ -531,7 +695,7 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
         onChange={setTab} 
         tabs={[
            {id: 'care', label: 'Care Profile'}, 
-           {id: 'medical', label: 'Medical', count: (pet.vaccines?.length || 0) + (pet.medications?.length || 0)}, 
+           {id: 'medical', label: 'Medical & Vaccines', count: (pet.vaccines?.length || 0)}, 
            {id: 'behavior', label: 'Behavior'},
            {id: 'gallery', label: 'Gallery'}
         ]} 
@@ -565,8 +729,10 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
          </div>
       )}
 
-      {/* Placeholder tabs for Medical, Behavior, Gallery */}
-      {tab === 'medical' && <div className="p-8 text-center text-slate-400">Medical content</div>}
+      {/* Medical Tab Implementation */}
+      {tab === 'medical' && <MedicalPanel pet={pet} />}
+
+      {/* Placeholder tabs for Behavior, Gallery */}
       {tab === 'behavior' && <div className="p-8 text-center text-slate-400">Behavior content</div>}
       {tab === 'gallery' && <div className="p-8 text-center text-slate-400">Gallery content</div>}
 

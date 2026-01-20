@@ -45,6 +45,25 @@ export interface FileAttachment {
   url: string;
 }
 
+export interface VetClinic {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email?: string;
+  website?: string;
+  emergency: boolean;
+}
+
+export interface Veterinarian {
+  id: string;
+  clinicId: string;
+  name: string;
+  specialty?: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface Pet {
   id: string;
   ownerId: string;
@@ -61,9 +80,8 @@ export interface Pet {
   vaccines?: Vaccine[];
   medications?: Medication[];
   photoUrl: string;
-  vet: string; // Legacy string
-  vetClinicId?: string; // Link to new Vet Platform
-  veterinarianId?: string; // Link to specific doctor
+  vet: string; // Legacy string name
+  vetClinicId?: string; // Link to VetClinic
   feedingInstructions: string;
   behaviorNotes?: string;
   activeProgram?: string; // e.g., "Puppy Jump Start"
@@ -76,6 +94,7 @@ export interface Vaccine {
   dateExpires: string;
   status: 'Valid' | 'Expiring' | 'Expired';
   verifiedBy?: string;
+  fileUrl?: string;
 }
 
 export interface Medication {
@@ -119,18 +138,28 @@ export interface InvoiceItem {
   price: number;
 }
 
+export interface PupdateMedia {
+  id: string;
+  type: 'photo' | 'video';
+  url: string;
+  caption?: string;
+}
+
 export interface ReportCard {
   id: string;
   reservationId: string;
   petId: string;
   date: string;
-  status: 'Draft' | 'Sent';
-  mood: 'Happy' | 'Energetic' | 'Shy' | 'Tired' | 'Anxious';
+  status: 'To Do' | 'Draft' | 'Sent';
+  mood: string[]; // Changed to array for multiple moods
   activities: string[];
-  eating: 'All' | 'Some' | 'None';
+  behaviorsWorkedOn?: string[]; // Specific training/behavior tags
+  eating: 'All' | 'Most' | 'Some' | 'None';
   potty: string[];
-  notes: string;
+  notes: string; // The "Dog's Voice" narrative
   staffId: string;
+  media: PupdateMedia[];
+  servicesCompleted?: string[]; // Linked services from that day
 }
 
 export interface KennelUnit {
@@ -222,7 +251,7 @@ export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Staff';
+  role: string; // 'Admin' | 'Manager' | 'Staff' (Mapped to Role ID)
   status: 'Active' | 'Inactive';
   lastLogin: string;
   avatarUrl?: string;
@@ -276,7 +305,7 @@ export interface WorkflowTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'Messaging' | 'Operations' | 'Revenue';
+  category: 'Messaging' | 'Operations' | 'Revenue' | 'Marketing';
   difficulty: 'Beginner' | 'Advanced';
   stepsCount: number;
 }
@@ -291,11 +320,12 @@ export interface WorkflowVariable {
 
 export interface AuditLogEntry {
   id: string;
-  actor: string;
-  action: string;
-  target: string;
+  actor: string; // User Name
+  action: string; // e.g., 'Modified Reservation'
+  target: string; // e.g., 'Res #r1'
   timestamp: string;
   details: string;
+  category: 'Security' | 'Finance' | 'Operations' | 'System';
 }
 
 export interface ApprovalRequest {
@@ -520,27 +550,107 @@ export interface AiAgent {
   actionButtonText: string;
 }
 
-// --- Vet Platform Types ---
+// --- System Admin Types ---
 
-export interface VetClinic {
+export interface Role {
   id: string;
   name: string;
-  address: string;
-  phone: string;
-  email?: string;
-  website?: string;
-  primaryContactName?: string;
-  emergency: boolean;
-  tags: string[];
-  autoRequestRecords: boolean;
-  lastRecordRequest?: string;
+  description: string;
+  permissions: Permission[];
+  usersCount: number;
+  isSystem?: boolean; // Cannot be deleted
 }
 
-export interface Veterinarian {
-  id: string;
-  clinicId: string;
+export type Permission = 
+  | 'view_financials' 
+  | 'manage_financials' 
+  | 'manage_users' 
+  | 'manage_settings' 
+  | 'view_reports' 
+  | 'manage_reservations' 
+  | 'delete_records'
+  | 'manage_marketing'
+  | 'export_data';
+
+export interface FacilityConfig {
   name: string;
-  specialty?: string;
-  email?: string; // Direct line if different
-  phone?: string; // Direct line if different
+  phone: string;
+  email: string;
+  website: string;
+  taxId: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+  hours: {
+    [key: string]: { open: string; close: string; closed: boolean }; // Mon, Tue, etc.
+  };
+}
+
+export interface TimeClockConfig {
+  enabled: boolean;
+  allowMobile: boolean;
+  geoFencing: boolean;
+  geoRadiusMeters: number;
+  autoClockOutHours: number; // e.g. 12 hours
+  overtimeThresholdWeekly: number; // e.g. 40
+}
+
+// --- Form Builder Types ---
+
+export interface FormField {
+  id: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea' | 'signature' | 'header';
+  required: boolean;
+  options?: string[]; // For select inputs
+  placeholder?: string;
+  helperText?: string;
+}
+
+export interface FormTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'Intake' | 'Agreement' | 'Medical' | 'Employment';
+  fields: FormField[];
+  isActive: boolean;
+  lastUpdated: string;
+}
+
+// --- Invoice Config Types ---
+
+export interface InvoiceSettings {
+  prefix: string;
+  nextNumber: number;
+  terms: string;
+  footerNote: string;
+  logoUrl?: string; // Simulated
+  dueDays: number;
+  taxLabel: string; // e.g. "Sales Tax" or "GST"
+}
+
+// --- Service Quotas Types ---
+
+export interface ServiceQuota {
+  serviceType: ServiceType;
+  maxDailyCapacity: number;
+  onlineBookingLimit: number; // e.g. 90% of capacity
+  overbookingBuffer: number; // e.g. 5 slots
+  warningThreshold: number; // When to show alert
+}
+
+// --- Portal Settings Types ---
+
+export interface PortalSettings {
+  enabled: boolean;
+  allowOnlineBooking: boolean;
+  allowPayments: boolean;
+  showPhotos: boolean;
+  requireWaiver: boolean;
+  announcement: string;
+  bookingWindowDays: number;
+  primaryColor?: string; // override system theme if needed
 }

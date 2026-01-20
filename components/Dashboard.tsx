@@ -5,7 +5,7 @@ import {
   MoreHorizontal, Plus, LogIn, LogOut, Printer, Filter, Search, Check, ThumbsUp, ThumbsDown,
   Settings, MessageSquare, CreditCard, Edit2, ArrowUp, ArrowDown, Eye, EyeOff, GripVertical,
   FileText, Syringe, Shield, DollarSign, Mail, Phone, ExternalLink, Trash2, Utensils, Dog, User, 
-  Scissors, Zap, Link as LinkIcon, BedDouble, Tag
+  Scissors, Zap, Link as LinkIcon, BedDouble, Tag, Megaphone, CalendarPlus, FileBarChart, ClipboardList
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, cn, Modal, Label, Input, Select, BulkActionBar } from './Common';
@@ -225,6 +225,61 @@ export const Dashboard = () => {
         </Card>
       </div>
 
+      {/* Operational Shortcuts (Deep Links) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+         <Card 
+            className="p-3 flex items-center gap-3 hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer transition-all group border-l-4 border-l-indigo-500"
+            onClick={() => navigate('/marketing?action=new-sms')}
+         >
+            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
+               <Megaphone size={18}/>
+            </div>
+            <div>
+               <div className="font-bold text-sm text-slate-800">Send Blast</div>
+               <div className="text-xs text-slate-500">New SMS Campaign</div>
+            </div>
+         </Card>
+
+         <Card 
+            className="p-3 flex items-center gap-3 hover:bg-purple-50 hover:border-purple-200 cursor-pointer transition-all group border-l-4 border-l-purple-500"
+            onClick={() => navigate('/team?action=add-shift')}
+         >
+            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
+               <CalendarPlus size={18}/>
+            </div>
+            <div>
+               <div className="font-bold text-sm text-slate-800">Add Shift</div>
+               <div className="text-xs text-slate-500">Manage Schedule</div>
+            </div>
+         </Card>
+
+         <Card 
+            className="p-3 flex items-center gap-3 hover:bg-green-50 hover:border-green-200 cursor-pointer transition-all group border-l-4 border-l-green-500"
+            onClick={() => navigate('/reports?reportId=fin_eod')}
+         >
+            <div className="p-2 bg-green-100 text-green-600 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
+               <FileBarChart size={18}/>
+            </div>
+            <div>
+               <div className="font-bold text-sm text-slate-800">EOD Report</div>
+               <div className="text-xs text-slate-500">Financial Summary</div>
+            </div>
+         </Card>
+
+         <Card 
+            className="p-3 flex items-center gap-3 hover:bg-orange-50 hover:border-orange-200 cursor-pointer transition-all group border-l-4 border-l-orange-500"
+            onClick={() => navigate('/care')}
+         >
+            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
+               <ClipboardList size={18}/>
+            </div>
+            <div>
+               <div className="font-bold text-sm text-slate-800">Care Board</div>
+               <div className="text-xs text-slate-500">Log Feed/Meds</div>
+            </div>
+         </Card>
+      </div>
+
       {/* Approvals Section (Human-in-the-Loop) */}
       {MOCK_APPROVALS.length > 0 && (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50/20">
@@ -354,7 +409,6 @@ export const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {currentList.length > 0 ? currentList.map((res) => {
-                    if (!res) return null;
                     const pet = MOCK_PETS.find(p => p?.id === res.petId);
                     const owner = MOCK_OWNERS.find(o => o?.id === res.ownerId);
                     

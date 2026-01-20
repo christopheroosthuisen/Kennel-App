@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -11,18 +12,32 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
+            },
+            borderRadius: {
+              DEFAULT: 'var(--radius)',
+              md: 'var(--radius)',
+              lg: 'calc(var(--radius) + 2px)',
+              xl: 'calc(var(--radius) + 4px)',
             },
             colors: {
               primary: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                700: '#0369a1',
+                50: 'var(--color-primary-50)',
+                100: 'var(--color-primary-100)',
+                200: 'var(--color-primary-200)',
+                300: 'var(--color-primary-300)',
+                400: 'var(--color-primary-400)',
+                500: 'var(--color-primary-500)',
+                600: 'var(--color-primary-600)',
+                700: 'var(--color-primary-700)',
+                800: 'var(--color-primary-800)',
+                900: 'var(--color-primary-900)',
               },
+              // Remap slate-950 to be our custom secondary/dark color for sidebars
               slate: {
-                850: '#1e293b', // Custom dark for sidebar
+                850: 'var(--color-secondary-900)', // Hover state
+                900: 'var(--color-secondary-900)', 
+                950: 'var(--color-secondary-950)', // Main Sidebar
               }
             }
           }
@@ -30,6 +45,22 @@
       }
     </script>
     <style>
+      /* Default Variables (Fallback) */
+      :root {
+        --font-sans: 'Inter';
+        --radius: 0.5rem;
+        
+        --color-primary-50: #f0f9ff;
+        --color-primary-100: #e0f2fe;
+        --color-primary-500: #0ea5e9;
+        --color-primary-600: #0284c7;
+        --color-primary-700: #0369a1;
+        --color-primary-900: #0c4a6e;
+
+        --color-secondary-950: #020617; /* Default Slate 950 */
+        --color-secondary-900: #0f172a;
+      }
+
       /* Custom scrollbar for high density lists */
       ::-webkit-scrollbar {
         width: 8px;
@@ -60,7 +91,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50 text-slate-900 overflow-hidden">
+  <body class="bg-gray-50 text-slate-900 overflow-hidden font-sans">
     <div id="root"></div>
   </body>
 </html>

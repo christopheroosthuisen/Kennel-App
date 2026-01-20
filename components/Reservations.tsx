@@ -50,8 +50,8 @@ export const Reservations = () => {
   }, [activeActionMenu]);
 
   const filteredReservations = MOCK_RESERVATIONS.filter(r => {
-    const pet = MOCK_PETS.find(p => p?.id === r.petId);
-    const owner = MOCK_OWNERS.find(o => o?.id === r.ownerId);
+    const pet = MOCK_PETS.find(p => p.id === r.petId);
+    const owner = MOCK_OWNERS.find(o => o.id === r.ownerId);
     const term = search.toLowerCase();
     
     const searchMatch = 
@@ -140,8 +140,8 @@ export const Reservations = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredReservations.map(res => {
-                const pet = MOCK_PETS.find(p => p?.id === res.petId);
-                const owner = MOCK_OWNERS.find(o => o?.id === res.ownerId);
+                const pet = MOCK_PETS.find(p => p.id === res.petId);
+                const owner = MOCK_OWNERS.find(o => o.id === res.ownerId);
                 return (
                   <tr key={res.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4 align-top">

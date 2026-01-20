@@ -20,8 +20,8 @@ const NotificationIcon = ({ type, priority }: { type: string, priority: string }
 
 const ContextCard = ({ notification }: { notification: Notification }) => {
   const navigate = useNavigate();
-  const owner = MOCK_OWNERS.find(o => o?.id === notification.relatedOwnerId);
-  const pet = MOCK_PETS.find(p => p?.id === notification.relatedPetId);
+  const owner = MOCK_OWNERS.find(o => o.id === notification.relatedOwnerId);
+  const pet = MOCK_PETS.find(p => p.id === notification.relatedPetId);
 
   if (!owner && !pet) return null;
 
@@ -66,7 +66,7 @@ export const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [commentText, setCommentText] = useState('');
 
-  const selectedNotification = notifications.find(n => n?.id === selectedId);
+  const selectedNotification = notifications.find(n => n.id === selectedId);
 
   const handleMarkAsRead = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();

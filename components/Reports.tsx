@@ -1,6 +1,5 @@
 
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BarChart, DollarSign, TrendingUp, Users, Plus, FileText, 
   PieChart, Calendar, ArrowUpRight, ArrowDownRight, Filter,
@@ -11,6 +10,7 @@ import {
 import { Card, Select, cn, Button, Modal, Label, Input, Badge, BulkActionBar } from './Common';
 import { ALL_REPORTS_CONFIG } from '../constants';
 import { ReportDefinition } from '../types';
+import { useSearchParams } from 'react-router-dom';
 
 // --- Reusable Chart Components (SVG based) ---
 
@@ -409,6 +409,15 @@ const ExecutiveDashboard = () => (
 export const Reports = () => {
   const [activeDashboard, setActiveDashboard] = useState<'library' | 'executive' | 'operations' | 'financial'>('library');
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  // Initialize from URL
+  useEffect(() => {
+     const reportId = searchParams.get('reportId');
+     if (reportId) {
+        setActiveReportId(reportId);
+     }
+  }, [searchParams]);
 
   if (activeReportId) {
      return <ReportRunner reportId={activeReportId} onBack={() => setActiveReportId(null)} />;

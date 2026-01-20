@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Label, Select, Textarea, Badge, Switch, cn, Tabs } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_SERVICE_CONFIGS, MOCK_UNITS } from '../constants';
+import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_SERVICE_CONFIGS, MOCK_UNITS, MOCK_VET_CLINICS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 import { 
   Calendar, User, Dog, AlertTriangle, Syringe, Sparkles, Check, 
@@ -177,11 +177,8 @@ export const ServiceManager = ({
                     onClick={() => toggleService(item.name)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-5 h-5 rounded border flex items-center justify-center transition-colors",
-                        isSelected ? "bg-primary-600 border-primary-600 text-white" : "bg-white border-slate-300"
-                      )}>
-                        {isSelected && <Check size={12}/>}
+                      <div className="w-5 h-5 rounded border flex items-center justify-center transition-colors bg-white">
+                        {isSelected && <Check size={12} className="text-primary-600"/>}
                       </div>
                       <div>
                         <div className="font-medium text-slate-800 text-sm">{item.name}</div>
@@ -209,12 +206,146 @@ export const ServiceManager = ({
   );
 };
 
-// --- New Functionality Modals ---
+// --- Modals ---
+
+export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
+  const pet = MOCK_PETS.find(p => p.id === id);
+  if (!pet) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Edit Pet: ${pet.name}`} size="lg">
+       <div className="space-y-6">
+          <div className="flex items-center gap-4 mb-4">
+             <img src={pet.photoUrl} className="h-16 w-16 rounded-full object-cover border border-slate-200" alt={pet.name} />
+             <Button variant="outline" size="sm">Change Photo</Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Name</Label><Input defaultValue={pet.name}/></div>
+            <div><Label>Breed</Label><Input defaultValue={pet.breed}/></div>
+            <div><Label>Weight (lbs)</Label><Input type="number" defaultValue={pet.weight}/></div>
+            <div><Label>Color</Label><Input defaultValue={pet.color}/></div>
+            <div><Label>Gender</Label><Select defaultValue={pet.gender}><option value="M">Male</option><option value="F">Female</option></Select></div>
+            <div><Label>Fixed</Label><Select defaultValue={pet.fixed ? 'Yes' : 'No'}><option value="Yes">Yes</option><option value="No">No</option></Select></div>
+            <div><Label>Birth Date</Label><Input type="date" defaultValue={pet.dob.split('T')[0]}/></div>
+            <div><Label>Microchip</Label><Input defaultValue={pet.microchip}/></div>
+          </div>
+
+          <div>
+             <Label>Veterinary Clinic</Label>
+             <Select defaultValue={pet.vetClinicId || ''}>
+                <option value="">-- Select Clinic --</option>
+                {MOCK_VET_CLINICS.map(vc => (
+                   <option key={vc.id} value={vc.id}>{vc.name}</option>
+                ))}
+             </Select>
+          </div>
+          
+          <div className="border-t border-slate-100 pt-4">
+            <Label>Feeding Instructions</Label>
+            <div className="relative mt-1">
+               <Textarea defaultValue={pet.feedingInstructions} className="pr-24"/>
+               <Button variant="ghost" size="sm" className="absolute right-2 top-2 text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100" title="Format with AI">
+                  <Sparkles size={14} className="mr-1"/> AI Format
+               </Button>
+            </div>
+          </div>
+
+          <div>
+             <Label>Medical Alerts & Behavior</Label>
+             <div className="flex gap-2 mb-2 flex-wrap">
+                {['Aggressive', 'Meds', 'Separation Anxiety', 'Escape Artist'].map(tag => (
+                   <label key={tag} className={cn("px-3 py-1 rounded-full border text-xs font-medium cursor-pointer transition-colors select-none", pet.alerts.includes(tag) ? "bg-red-50 border-red-200 text-red-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")}>
+                      <input type="checkbox" className="hidden" defaultChecked={pet.alerts.includes(tag)} />
+                      {tag}
+                   </label>
+                ))}
+             </div>
+             <Textarea defaultValue={pet.behaviorNotes} placeholder="Detailed notes..." />
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
+             <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <Button onClick={() => { alert('Pet updated!'); onClose(); }}>Save Profile</Button>
+          </div>
+       </div>
+    </Modal>
+  );
+};
+
+export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
+  const owner = MOCK_OWNERS.find(o => o.id === id);
+  if (!owner) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Edit Owner: ${owner.name}`} size="lg">
+       <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+             <div><Label>Full Name</Label><Input defaultValue={owner.name}/></div>
+             <div><Label>Email</Label><Input defaultValue={owner.email}/></div>
+             <div><Label>Phone</Label><Input defaultValue={owner.phone}/></div>
+             <div><Label>Alt. Phone</Label><Input placeholder="Work / Spouse"/></div>
+             <div className="col-span-2"><Label>Address</Label><Input defaultValue={owner.address}/></div>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded border border-slate-100">
+             <h4 className="font-bold text-sm text-slate-800 mb-3">Emergency Contact</h4>
+             <div className="grid grid-cols-3 gap-3">
+                <div><Label>Name</Label><Input defaultValue={owner.emergencyContact?.name}/></div>
+                <div><Label>Relation</Label><Input defaultValue={owner.emergencyContact?.relation}/></div>
+                <div><Label>Phone</Label><Input defaultValue={owner.emergencyContact?.phone}/></div>
+             </div>
+          </div>
+
+          <div>
+             <Label>Administrative Notes</Label>
+             <Textarea defaultValue={owner.notes} className="h-20" placeholder="Gate codes, authorized pickups, etc."/>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
+             <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <Button onClick={() => { alert('Owner updated!'); onClose(); }}>Save Changes</Button>
+          </div>
+       </div>
+    </Modal>
+  );
+};
+
+export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
+   const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
+   const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+   
+   const [selectedServices, setSelectedServices] = useState<string[]>(reservation?.services || []);
+
+   if (!reservation) return null;
+
+   return (
+     <Modal isOpen={isOpen} onClose={onClose} title="Manage Services & Add-ons" size="md">
+        <div className="space-y-6">
+           <div className="text-sm text-slate-600">
+              Adding services for <span className="font-bold text-slate-900">{pet?.name}</span>'s {reservation.type} stay.
+           </div>
+
+           <ServiceManager selectedServices={selectedServices} onChange={setSelectedServices} />
+
+           <div className="bg-slate-50 p-4 rounded flex justify-between items-center border border-slate-200">
+               <span className="text-sm font-medium text-slate-600">Estimated Total Add-ons</span>
+               <span className="text-lg font-bold text-slate-900">$45.00</span>
+           </div>
+
+           <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
+             <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <Button onClick={() => { alert('Services updated!'); onClose(); }}>Update Reservation</Button>
+           </div>
+        </div>
+     </Modal>
+   );
+};
 
 export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
-  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
+  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
 
   // Mock balance check
   const balance = owner?.balance || 0;
@@ -296,8 +427,8 @@ export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
-  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
+  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
+  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
   const [selectedUnit, setSelectedUnit] = useState(reservation?.lodging || '');
 
   const availableUnits = MOCK_UNITS.filter(u => u.status === 'Active');
@@ -344,7 +475,7 @@ export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p?.id === id);
+  const pet = MOCK_PETS.find(p => p.id === id);
   const [selectedTag, setSelectedTag] = useState('Note');
   const [note, setNote] = useState('');
 
@@ -409,9 +540,9 @@ export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 // --- Main Edit Modal ---
 
 export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
-  const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o?.id === reservation?.ownerId);
+  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
+  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
   
   const [activeTab, setActiveTab] = useState('general');
   // Local state for edits
@@ -572,130 +703,4 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
       </div>
     </Modal>
   );
-};
-
-// --- Re-export other modals with minor improvements ---
-
-export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p?.id === id);
-  if (!pet) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Edit Pet: ${pet.name}`} size="lg">
-       <div className="space-y-6">
-          <div className="flex items-center gap-4 mb-4">
-             <img src={pet.photoUrl} className="h-16 w-16 rounded-full object-cover border border-slate-200" alt={pet.name} />
-             <Button variant="outline" size="sm">Change Photo</Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div><Label>Name</Label><Input defaultValue={pet.name}/></div>
-            <div><Label>Breed</Label><Input defaultValue={pet.breed}/></div>
-            <div><Label>Weight (lbs)</Label><Input type="number" defaultValue={pet.weight}/></div>
-            <div><Label>Color</Label><Input defaultValue={pet.color}/></div>
-            <div><Label>Gender</Label><Select defaultValue={pet.gender}><option value="M">Male</option><option value="F">Female</option></Select></div>
-            <div><Label>Fixed</Label><Select defaultValue={pet.fixed ? 'Yes' : 'No'}><option value="Yes">Yes</option><option value="No">No</option></Select></div>
-            <div><Label>Birth Date</Label><Input type="date" defaultValue={pet.dob.split('T')[0]}/></div>
-            <div><Label>Microchip</Label><Input defaultValue={pet.microchip}/></div>
-          </div>
-          
-          <div className="border-t border-slate-100 pt-4">
-            <Label>Feeding Instructions</Label>
-            <div className="relative mt-1">
-               <Textarea defaultValue={pet.feedingInstructions} className="pr-24"/>
-               <Button variant="ghost" size="sm" className="absolute right-2 top-2 text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100" title="Format with AI">
-                  <Sparkles size={14} className="mr-1"/> AI Format
-               </Button>
-            </div>
-          </div>
-
-          <div>
-             <Label>Medical Alerts & Behavior</Label>
-             <div className="flex gap-2 mb-2 flex-wrap">
-                {['Aggressive', 'Meds', 'Separation Anxiety', 'Escape Artist'].map(tag => (
-                   <label key={tag} className={cn("px-3 py-1 rounded-full border text-xs font-medium cursor-pointer transition-colors select-none", pet.alerts.includes(tag) ? "bg-red-50 border-red-200 text-red-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")}>
-                      <input type="checkbox" className="hidden" defaultChecked={pet.alerts.includes(tag)} />
-                      {tag}
-                   </label>
-                ))}
-             </div>
-             <Textarea defaultValue={pet.behaviorNotes} placeholder="Detailed notes..." />
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
-             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Pet updated!'); onClose(); }}>Save Profile</Button>
-          </div>
-       </div>
-    </Modal>
-  );
-};
-
-export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const owner = MOCK_OWNERS.find(o => o?.id === id);
-  if (!owner) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Edit Owner: ${owner.name}`} size="lg">
-       <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-             <div><Label>Full Name</Label><Input defaultValue={owner.name}/></div>
-             <div><Label>Email</Label><Input defaultValue={owner.email}/></div>
-             <div><Label>Phone</Label><Input defaultValue={owner.phone}/></div>
-             <div><Label>Alt. Phone</Label><Input placeholder="Work / Spouse"/></div>
-             <div className="col-span-2"><Label>Address</Label><Input defaultValue={owner.address}/></div>
-          </div>
-
-          <div className="bg-slate-50 p-4 rounded border border-slate-100">
-             <h4 className="font-bold text-sm text-slate-800 mb-3">Emergency Contact</h4>
-             <div className="grid grid-cols-3 gap-3">
-                <div><Label>Name</Label><Input defaultValue={owner.emergencyContact?.name}/></div>
-                <div><Label>Relation</Label><Input defaultValue={owner.emergencyContact?.relation}/></div>
-                <div><Label>Phone</Label><Input defaultValue={owner.emergencyContact?.phone}/></div>
-             </div>
-          </div>
-
-          <div>
-             <Label>Administrative Notes</Label>
-             <Textarea defaultValue={owner.notes} className="h-20" placeholder="Gate codes, authorized pickups, etc."/>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
-             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Owner updated!'); onClose(); }}>Save Changes</Button>
-          </div>
-       </div>
-    </Modal>
-  );
-};
-
-export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-   const reservation = MOCK_RESERVATIONS.find(r => r?.id === id);
-   const pet = MOCK_PETS.find(p => p?.id === reservation?.petId);
-   
-   const [selectedServices, setSelectedServices] = useState<string[]>(reservation?.services || []);
-
-   if (!reservation) return null;
-
-   return (
-     <Modal isOpen={isOpen} onClose={onClose} title="Manage Services & Add-ons" size="md">
-        <div className="space-y-6">
-           <div className="text-sm text-slate-600">
-              Adding services for <span className="font-bold text-slate-900">{pet?.name}</span>'s {reservation.type} stay.
-           </div>
-
-           <ServiceManager selectedServices={selectedServices} onChange={setSelectedServices} />
-
-           <div className="bg-slate-50 p-4 rounded flex justify-between items-center border border-slate-200">
-               <span className="text-sm font-medium text-slate-600">Estimated Total Add-ons</span>
-               <span className="text-lg font-bold text-slate-900">$45.00</span>
-           </div>
-
-           <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
-             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Services updated!'); onClose(); }}>Update Reservation</Button>
-           </div>
-        </div>
-     </Modal>
-   );
 };

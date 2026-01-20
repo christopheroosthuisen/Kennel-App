@@ -150,10 +150,14 @@ const TimeClock = () => {
   );
 };
 
-const SmartScheduler = ({ ratios }: { ratios: StaffRatio[] }) => {
+const SmartScheduler = ({ ratios, autoOpen }: { ratios: StaffRatio[], autoOpen: boolean }) => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [shifts, setShifts] = useState<Shift[]>(MOCK_SHIFTS);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+
+  useEffect(() => {
+     if (autoOpen) setIsShiftModalOpen(true);
+  }, [autoOpen]);
 
   // Generate Week Days
   const days = Array.from({length: 7}, (_, i) => {
@@ -192,7 +196,7 @@ const SmartScheduler = ({ ratios }: { ratios: StaffRatio[] }) => {
                         style={{ width: `${coveragePercent}%` }}
                       />
                    </div>
-                   <span className={cn("text-sm font-bold", coveragePercent < 80 ? "text-red-600" : "text-green-600")}>{coveragePercent}%</span>
+                   <span className="text-sm font-bold" style={{ color: coveragePercent < 80 ? '#ef4444' : '#22c55e' }}>{coveragePercent}%</span>
                 </div>
              </div>
              <div className="h-8 w-px bg-slate-200"></div>
@@ -366,6 +370,7 @@ const TaskBoard = () => {
 export const TeamManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'schedule';
+  const autoOpenShift = searchParams.get('action') === 'add-shift';
   
   // Read-only ratios for the scheduler visualization
   const ratios: StaffRatio[] = [
@@ -415,7 +420,7 @@ export const TeamManagement = () => {
        </div>
 
        <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 overflow-hidden">
-          {activeTab === 'schedule' && <SmartScheduler ratios={ratios} />}
+          {activeTab === 'schedule' && <SmartScheduler ratios={ratios} autoOpen={autoOpenShift} />}
           {activeTab === 'tasks' && <TaskBoard />}
           {activeTab === 'clock' && <TimeClock />}
        </div>

@@ -33,7 +33,9 @@ export const TeamChatProvider = ({ children }: { children?: ReactNode }) => {
   // Modal State
   const [isDiscussOpen, setIsDiscussOpen] = useState(false);
   const [discussContext, setDiscussContext] = useState<InternalMessageContext | null>(null);
-  const [discussChannel, setDiscussChannel] = useState(MOCK_CHANNELS[0].id);
+  
+  // Safe initialization: Check if channels exist before accessing [0].id to prevent crash
+  const [discussChannel, setDiscussChannel] = useState(MOCK_CHANNELS?.[0]?.id || '');
   const [discussMessage, setDiscussMessage] = useState('');
 
   const sendMessage = (channelId: string, content: string, context?: InternalMessageContext) => {
@@ -65,11 +67,15 @@ export const TeamChatProvider = ({ children }: { children?: ReactNode }) => {
   const openDiscuss = (context: InternalMessageContext) => {
     setDiscussContext(context);
     setDiscussMessage(`Regarding ${context.type}: ${context.title}...`);
+    // Ensure we have a valid channel selected if state was empty
+    if (!discussChannel && channels.length > 0) {
+      setDiscussChannel(channels[0].id);
+    }
     setIsDiscussOpen(true);
   };
 
   const handleDiscussSubmit = () => {
-    if (discussContext) {
+    if (discussContext && discussChannel) {
       sendMessage(discussChannel, discussMessage, discussContext);
       setIsDiscussOpen(false);
       setDiscussMessage('');

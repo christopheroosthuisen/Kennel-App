@@ -1,6 +1,20 @@
 
+
 import { Owner, Pet, Reservation, ReservationStatus, ServiceType, Notification, Invoice, ReportCard, KennelUnit, ServiceConfig, PricingRule, CommunicationTemplate, TaxRate, UserAccount, AutomationRule, Workflow, WorkflowRun, WorkflowTemplate, WorkflowVariable, AuditLogEntry, ApprovalRequest, Package, Membership, Message, ClassType, ClassSession, ClassEnrollment, InternalChannel, InternalMessage, CareTask, MarketingCampaign, CallLog, MarketingConnector, ReportDefinition, ServiceTask, AiAgent, VetClinic, Veterinarian } from './types';
 import { ShieldCheck, UserX, Camera, TrendingUp, ClipboardList } from 'lucide-react';
+
+export const MOCK_VET_CLINICS: VetClinic[] = [
+  { id: 'vc1', name: 'Downtown Animal Hospital', phone: '(555) 123-4567', email: 'records@downtownvet.com', address: '101 Main St, Phoenix, AZ 85001', emergency: false },
+  { id: 'vc2', name: '24/7 Pet Care Center', phone: '(555) 987-6543', email: 'urgent@petcare247.com', address: '500 Emergency Dr, Phoenix, AZ 85004', emergency: true },
+  { id: 'vc3', name: 'Scottsdale Veterinary Clinic', phone: '(480) 555-1234', email: 'info@scottsdalevet.com', address: '789 Scottsdale Rd, Scottsdale, AZ 85251', emergency: false, website: 'www.scottsdalevet.com' },
+];
+
+export const MOCK_VETERINARIANS: Veterinarian[] = [
+  { id: 'dr1', clinicId: 'vc1', name: 'Dr. Sarah Miller', specialty: 'General Practice', email: 'smiller@downtownvet.com' },
+  { id: 'dr2', clinicId: 'vc1', name: 'Dr. James Chen', specialty: 'Dentistry' },
+  { id: 'dr3', clinicId: 'vc2', name: 'Dr. Emily Brown', specialty: 'Emergency Medicine', phone: '(555) 777-6667' },
+  { id: 'dr4', clinicId: 'vc3', name: 'Dr. Lisa Wu', specialty: 'Holistic Care' },
+];
 
 export const MOCK_OWNERS: Owner[] = [
   { 
@@ -31,7 +45,7 @@ export const MOCK_PETS: Pet[] = [
   { 
     id: 'p1', ownerId: 'o1', name: 'Rex', breed: 'Golden Retriever', weight: 75, dob: '2019-05-15', gender: 'M', fixed: true, 
     color: 'Golden', microchip: '9851123456789',
-    alerts: ['Meds'], vaccineStatus: 'Valid', photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop', vet: 'Dr. Treat', vetClinicId: 'vc1', 
+    alerts: ['Meds'], vaccineStatus: 'Valid', photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop', vet: 'Dr. Treat', vetClinicId: 'vc1',
     feedingInstructions: '2 cups Dry Kibble AM/PM. Mix in wet food on Sundays.',
     behaviorNotes: 'Friendly with all dogs. Loves playing fetch. Can be shy around loud noises.',
     vaccines: [
@@ -79,8 +93,8 @@ export const MOCK_INVOICES: Invoice[] = [
 ];
 
 export const MOCK_REPORT_CARDS: ReportCard[] = [
-  { id: 'rc1', reservationId: 'r1', petId: 'p1', date: '2023-10-26', status: 'Sent', mood: 'Happy', activities: ['Ball Fetch', 'Group Play'], eating: 'All', potty: ['Pee', 'Poop'], notes: 'Rex had a great day!', staffId: 's1' },
-  { id: 'rc2', reservationId: 'r2', petId: 'p2', date: '2023-10-26', status: 'Draft', mood: 'Tired', activities: ['Nap', 'Snuggles'], eating: 'Some', potty: ['Pee'], notes: 'Bella seemed a bit sleepy today.', staffId: 's1' }
+  { id: 'rc1', reservationId: 'r1', petId: 'p1', date: '2023-10-26', status: 'Sent', mood: ['Happy'], activities: ['Ball Fetch', 'Group Play'], eating: 'All', potty: ['Pee', 'Poop'], notes: 'Rex had a great day!', staffId: 's1', media: [] },
+  { id: 'rc2', reservationId: 'r2', petId: 'p2', date: '2023-10-26', status: 'Draft', mood: ['Tired'], activities: ['Nap', 'Snuggles'], eating: 'Some', potty: ['Pee'], notes: 'Bella seemed a bit sleepy today.', staffId: 's1', media: [] }
 ];
 
 export const MOCK_UNITS: KennelUnit[] = [
@@ -159,7 +173,6 @@ export const MOCK_PRICING_RULES: PricingRule[] = [
 ];
 
 export const MOCK_EMAIL_TEMPLATES: CommunicationTemplate[] = [
-  // ... (Existing templates)
   { 
     id: 'et1', name: 'Reservation Confirmation', type: 'Email', category: 'Reservation', active: true, trigger: 'ReservationConfirmed', 
     subject: 'Booking Confirmed: {pet_name} at Partners Dogs', 
@@ -169,7 +182,6 @@ export const MOCK_EMAIL_TEMPLATES: CommunicationTemplate[] = [
     id: 'sms1', name: 'Res Reminder (SMS)', type: 'SMS', category: 'Reservation', active: true, trigger: '24hBeforeCheckIn', 
     body: 'Reminder: {pet_name} is booked for {service_type} starting tomorrow at {start_time}. Reply C to confirm or call us with questions. - Partners Dogs' 
   },
-  // ... more templates ...
 ];
 
 export const MOCK_TAX_RATES: TaxRate[] = [
@@ -190,79 +202,113 @@ export const MOCK_AUTOMATIONS: AutomationRule[] = [
 ];
 
 export const MOCK_WORKFLOWS: Workflow[] = [
-  // ... (Existing workflows)
+  {
+    id: 'wf1', name: 'New Client Onboarding', description: 'Welcome email and data collection form', 
+    environment: 'production', isEnabled: true,
+    trigger: { type: 'Event', details: 'Owner Created' },
+    steps: [{id: 's1', type: 'Action', name: 'Send Welcome Email', config: {}}, {id: 's2', type: 'Delay', name: 'Wait 2 Days', config: {}}],
+    stats: { runsLast24h: 12, successRate: 100 }, lastEdited: '2 days ago'
+  },
+  {
+    id: 'wf2', name: 'Missed Vaccination Follow-up', description: 'Automated follow-up for missing records',
+    environment: 'staging', isEnabled: false,
+    trigger: { type: 'Schedule', details: 'Daily at 9:00 AM' },
+    steps: [{id: 's1', type: 'Condition', name: 'Check Expiry', config: {}}, {id: 's2', type: 'Action', name: 'Send Reminder', config: {}}],
+    stats: { runsLast24h: 0, successRate: 0 }, lastEdited: '1 week ago'
+  }
 ];
 
 export const MOCK_WORKFLOW_RUNS: WorkflowRun[] = [
-  // ... (Existing runs)
+  { id: 'run1', workflowId: 'wf1', workflowName: 'New Client Onboarding', status: 'Completed', startedAt: '2023-10-25 09:30 AM' },
+  { id: 'run2', workflowId: 'wf1', workflowName: 'New Client Onboarding', status: 'Running', startedAt: '2023-10-26 10:15 AM', currentStep: 'Wait 2 Days' },
 ];
 
 export const MOCK_TEMPLATES: WorkflowTemplate[] = [
-  // ...
+  { id: 't1', name: 'Review Request', description: 'Ask for Google Review after positive feedback', category: 'Marketing', difficulty: 'Beginner', stepsCount: 3 },
+  { id: 't2', name: 'Birthday Discount', description: 'Send coupon on pet birthday', category: 'Revenue', difficulty: 'Beginner', stepsCount: 2 },
 ];
 
 export const MOCK_VARIABLES: WorkflowVariable[] = [
-  // ...
+  { id: 'v1', key: 'COMPANY_NAME', value: 'Partners Dogs', type: 'String', isEncrypted: false },
+  { id: 'v2', key: 'STRIPE_API_KEY', value: 'sk_test_...', type: 'Secret', isEncrypted: true },
 ];
 
 export const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
-  // ...
+  { id: 'log1', actor: 'John Doe', action: 'Modified Reservation', target: 'Res #r1', timestamp: '2023-10-25 14:30', details: 'Changed lodging from K101 to K102', category: 'Operations' },
+  { id: 'log2', actor: 'System', action: 'Sent Email', target: 'Alice Johnson', timestamp: '2023-10-25 09:00', details: 'Reservation Confirmation', category: 'System' },
 ];
 
 export const MOCK_APPROVALS: ApprovalRequest[] = [
-  // ...
+  { id: 'app1', workflowRunId: 'run3', workflowName: 'Refund Process', requestedAt: '2023-10-26 11:00 AM', description: 'Refund $50.00 to Bob Smith', status: 'Pending', dataPayload: { amount: 50, reason: 'Dissatisfied' } }
 ];
 
 export const MOCK_PACKAGES: Package[] = [
-  // ...
+  { id: 'pkg1', name: '5 Day Daycare Pass', internalName: 'Daycare 5-Pack', description: 'Prepaid 5 full days of daycare.', price: 165.00, serviceTypeTarget: ServiceType.Daycare, creditQuantity: 5, active: true },
+  { id: 'pkg2', name: '10 Day Daycare Pass', internalName: 'Daycare 10-Pack', description: 'Prepaid 10 full days. Best value.', price: 315.00, serviceTypeTarget: ServiceType.Daycare, creditQuantity: 10, active: true }
 ];
 
 export const MOCK_MEMBERSHIPS: Membership[] = [
-  // ...
+  { id: 'mem1', name: 'VIP Club', price: 99.00, billingFrequency: 'Monthly', description: 'Unlimited daycare and 10% off boarding.', benefits: [{id: 'b1', type: 'Discount', targetService: ServiceType.Boarding, value: 10}], active: true }
 ];
 
 export const MOCK_MESSAGES: Message[] = [
-  // ...
+  { id: 'msg1', ownerId: 'o1', direction: 'Inbound', type: 'SMS', body: 'Running 10 mins late for pickup!', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), status: 'Read' },
+  { id: 'msg2', ownerId: 'o1', direction: 'Outbound', type: 'SMS', body: 'No problem, drive safe!', timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(), status: 'Delivered', sender: 'Sarah' }
 ];
 
 export const MOCK_CLASS_TYPES: ClassType[] = [
-  // ...
+  { id: 'ct1', name: 'Puppy Kindergarten', description: 'Socialization for puppies under 6 months.', defaultCapacity: 8, defaultPrice: 150, creditCost: 1, color: 'bg-pink-100 text-pink-700 border-pink-200' },
+  { id: 'ct2', name: 'Obedience 101', description: 'Basic commands: Sit, Stay, Come.', defaultCapacity: 6, defaultPrice: 180, creditCost: 1, color: 'bg-blue-100 text-blue-700 border-blue-200' }
 ];
 
 export const MOCK_CLASS_SESSIONS: ClassSession[] = [
-  // ...
+  { id: 'cs1', classTypeId: 'ct1', startTime: '2023-10-28T10:00:00', durationMinutes: 60, instructorId: 'u2', capacity: 8, status: 'Scheduled' },
+  { id: 'cs2', classTypeId: 'ct2', startTime: '2023-10-28T11:30:00', durationMinutes: 60, instructorId: 'u2', capacity: 6, status: 'Scheduled' }
 ];
 
 export const MOCK_CLASS_ENROLLMENTS: ClassEnrollment[] = [
-  // ...
+  { id: 'ce1', sessionId: 'cs1', petId: 'p5', ownerId: 'o4', status: 'Enrolled', paymentMethod: 'Unpaid', checkedIn: false }
 ];
 
 export const MOCK_CHANNELS: InternalChannel[] = [
-  // ...
+  { id: 'c1', name: 'general', type: 'public', description: 'Team announcements and general chatter', unreadCount: 0, members: ['u1', 'u2', 'u3'] },
+  { id: 'c2', name: 'front-desk', type: 'public', description: 'Check-ins, phones, and client issues', unreadCount: 2, members: ['u1', 'u2'] },
+  { id: 'c3', name: 'kennel-staff', type: 'private', description: 'Back of house coordination', unreadCount: 0, members: ['u1', 'u3'] },
+  { id: 'dm1', name: 'Sarah Smith', type: 'dm', unreadCount: 1, members: ['u1', 'u2'] }
 ];
 
 export const MOCK_INTERNAL_MESSAGES: InternalMessage[] = [
-  // ...
+  { id: 'im1', channelId: 'c1', senderId: 'u2', content: 'Has anyone seen the keys to Suite 4?', timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), reactions: {'👀': 2} },
+  { id: 'im2', channelId: 'c1', senderId: 'u3', content: 'I think they are on the hook in the break room.', timestamp: new Date(Date.now() - 1000 * 60 * 110).toISOString(), reactions: {'👍': 1} }
 ];
 
 export const MOCK_CARE_TASKS: CareTask[] = [
-  // ...
+  { id: 'ct1', petId: 'p1', unit: 'K101', type: 'Feeding', shift: 'AM', status: 'Prepared', description: '2 cups Dry Kibble', instructions: 'Mix with wet food on Sundays.' },
+  { id: 'ct2', petId: 'p1', unit: 'K101', type: 'Medication', shift: 'AM', status: 'Pending', description: 'Apoquel 16mg', instructions: 'Give with breakfast', warning: true },
+  { id: 'ct3', petId: 'p2', unit: 'K102', type: 'Feeding', shift: 'AM', status: 'Completed', description: '1.5 cups', completedAt: new Date().toISOString() },
+  { id: 'ct4', petId: 'p3', unit: 'Playgroup A', type: 'Feeding', shift: 'AM', status: 'Pending', description: '1 cup AM', instructions: 'Watch for aggression' }
 ];
 
 export const MOCK_CAMPAIGNS: MarketingCampaign[] = [
-  // ...
+  { id: 'mc1', name: 'October Newsletter', type: 'Email', status: 'Sent', sentCount: 425, openRate: 0.45, clickRate: 0.12, createdAt: '2023-10-01', audience: 'All Owners' },
+  { id: 'mc2', name: 'Holiday Booking Reminder', type: 'SMS', status: 'Scheduled', sentCount: 0, scheduledFor: '2023-11-01', createdAt: '2023-10-25', audience: 'VIP Clients' }
 ];
 
 export const MOCK_CALL_LOGS: CallLog[] = [
-  // ...
+  { id: 'cl1', direction: 'Inbound', from: '555-0101', to: 'Main Line', durationSeconds: 145, timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), status: 'Answered', relatedOwnerId: 'o1', recordingUrl: '#' },
+  { id: 'cl2', direction: 'Outbound', from: 'Main Line', to: '555-9999', durationSeconds: 0, timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), status: 'Voicemail', relatedOwnerId: 'o1' }
 ];
 
 export const MOCK_CONNECTORS: MarketingConnector[] = [
-  // ...
+  { id: 'conn1', provider: 'Twilio', type: 'SMS', status: 'Connected', apiKeyMasked: 'sk_live_...4829' },
+  { id: 'conn2', provider: 'SendGrid', type: 'Email', status: 'Connected', apiKeyMasked: 'SG.928...' },
+  { id: 'conn3', provider: 'Mailgun', type: 'Email', status: 'Disconnected', apiKeyMasked: 'key-...' }
 ];
 
 export const ALL_REPORTS_CONFIG: ReportDefinition[] = [
-  // ...
+  { id: 'fin_eod', category: 'Financial', name: 'End of Day Summary', description: 'Daily revenue breakdown by payment method.', columns: ['Date', 'Payment Method', 'Amount', 'Transaction ID', 'Cashier'] },
+  { id: 'ani_vax', category: 'Animals', name: 'Expired Vaccines', description: 'List of pets with expired or expiring vaccinations.', columns: ['Pet Name', 'Owner Name', 'Vaccine', 'Expiry Date', 'Status'] },
+  { id: 'ops_occ', category: 'Operations', name: 'Occupancy Forecast', description: 'Future occupancy projections by unit type.', columns: ['Date', 'Unit Type', 'Occupancy %', 'Total Guests'] }
 ];
 
 export const MOCK_AGENTS: AiAgent[] = [
@@ -316,81 +362,4 @@ export const MOCK_AGENTS: AiAgent[] = [
     lastRun: '8 hours ago',
     actionButtonText: 'Compile Handoff'
   },
-];
-
-// --- VETERINARY DATA ---
-
-export const MOCK_VET_CLINICS: VetClinic[] = [
-  {
-    id: 'vc1',
-    name: 'Dr. Treat',
-    address: '123 Wellness Way, Phoenix, AZ 85001',
-    phone: '(555) 888-9999',
-    email: 'records@drtreat.com',
-    website: 'www.drtreat.com',
-    primaryContactName: 'Front Desk',
-    emergency: false,
-    tags: ['General', 'Trusted'],
-    autoRequestRecords: true,
-    lastRecordRequest: '2023-10-20'
-  },
-  {
-    id: 'vc2',
-    name: 'City Vet Hospital',
-    address: '456 Central Ave, Phoenix, AZ 85004',
-    phone: '(555) 777-6666',
-    email: 'info@cityvet.com',
-    website: 'www.cityvet.com',
-    primaryContactName: 'Dr. Brown',
-    emergency: true,
-    tags: ['Emergency', 'Surgery'],
-    autoRequestRecords: false
-  },
-  {
-    id: 'vc3',
-    name: 'Happy Paws Clinic',
-    address: '789 Scottsdale Rd, Scottsdale, AZ 85251',
-    phone: '(555) 444-3333',
-    email: 'admin@happypaws.com',
-    website: 'www.happypaws.com',
-    emergency: false,
-    tags: ['Holistic', 'Acupuncture'],
-    autoRequestRecords: true,
-    lastRecordRequest: '2023-10-25'
-  },
-  {
-    id: 'vc4',
-    name: 'Valley Animal Hospital',
-    address: '321 Cactus Drive, Tempe, AZ 85281',
-    phone: '(555) 222-1212',
-    email: 'records@valleyanimal.com',
-    website: 'www.valleyanimal.com',
-    primaryContactName: 'Nurse Jackie',
-    emergency: true,
-    tags: ['24/7', 'Trauma'],
-    autoRequestRecords: true,
-    lastRecordRequest: '2023-10-27'
-  },
-  {
-    id: 'vc5',
-    name: 'Paws & Claws Veterinary Center',
-    address: '999 Desert Blvd, Mesa, AZ 85202',
-    phone: '(555) 111-9090',
-    email: 'frontdesk@pawsclaws.com',
-    website: 'www.pawsclaws.com',
-    emergency: false,
-    tags: ['General', 'Exotics'],
-    autoRequestRecords: false
-  }
-];
-
-export const MOCK_VETERINARIANS: Veterinarian[] = [
-  { id: 'dr1', clinicId: 'vc1', name: 'Dr. Sarah Miller', specialty: 'General Practice', email: 'smiller@drtreat.com' },
-  { id: 'dr2', clinicId: 'vc1', name: 'Dr. James Chen', specialty: 'Dentistry' },
-  { id: 'dr3', clinicId: 'vc2', name: 'Dr. Emily Brown', specialty: 'Emergency Medicine', phone: '(555) 777-6667' },
-  { id: 'dr4', clinicId: 'vc3', name: 'Dr. Lisa Wu', specialty: 'Holistic Care' },
-  { id: 'dr5', clinicId: 'vc4', name: 'Dr. Robert Stone', specialty: 'Surgery', email: 'rstone@valleyanimal.com' },
-  { id: 'dr6', clinicId: 'vc4', name: 'Dr. Amanda Lee', specialty: 'Internal Medicine' },
-  { id: 'dr7', clinicId: 'vc5', name: 'Dr. Kevin Patel', specialty: 'Exotics' },
-  { id: 'dr8', clinicId: 'vc5', name: 'Dr. Jessica Davis', specialty: 'General Practice' }
 ];
