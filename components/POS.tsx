@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Search, ShoppingCart, Trash2, CreditCard, User, Plus, Minus, ChevronRight, X } from 'lucide-react';
 import { Card, Button, Input, Badge, Select, cn, Modal, Label } from './Common';
-import { MOCK_OWNERS } from '../constants';
+import { useData } from './DataContext';
 
 const PRODUCTS = [
   { id: 1, name: 'Premium Kibble 5lb', price: 24.99, category: 'Retail', color: 'bg-orange-100 text-orange-800' },
@@ -13,6 +14,7 @@ const PRODUCTS = [
 ];
 
 export const POS = () => {
+  const { owners } = useData();
   const [cart, setCart] = useState<{id: number, name: string, price: number, qty: number}[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedCustomer, setSelectedCustomer] = useState<{id: string, name: string} | null>(null);
@@ -47,7 +49,7 @@ export const POS = () => {
   const tax = subtotal * 0.08;
   const total = subtotal + tax;
 
-  const filteredCustomers = MOCK_OWNERS.filter(o => 
+  const filteredCustomers = owners.filter(o => 
     o.name.toLowerCase().includes(customerSearch.toLowerCase()) || 
     o.phone.includes(customerSearch)
   );

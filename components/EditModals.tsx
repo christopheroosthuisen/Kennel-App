@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Label, Select, Textarea, Badge, Switch, cn, Tabs } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_SERVICE_CONFIGS, MOCK_UNITS, MOCK_VET_CLINICS } from '../constants';
+import { MOCK_SERVICE_CONFIGS, MOCK_UNITS, MOCK_VET_CLINICS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 import { 
   Calendar, User, Dog, AlertTriangle, Syringe, Sparkles, Check, 
   BedDouble, Clock, DollarSign, Trash2, Plus, ArrowRight, LayoutGrid,
   LogOut, CreditCard, X, Info
 } from 'lucide-react';
+import { useData } from './DataContext';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -37,7 +38,6 @@ export const LodgingManager = ({
 
   const splitSegment = (index: number) => {
     const segment = segments[index];
-    // Logic to split dates would go here. For UI demo, we just duplicate the row essentially
     const newSegment = { ...segment, id: Date.now(), startDate: segment.startDate, endDate: segment.endDate, unit: '' };
     const newSegments = [...segments];
     newSegments.splice(index + 1, 0, newSegment);
@@ -55,7 +55,7 @@ export const LodgingManager = ({
     newSegments[index] = { ...newSegments[index], [field]: value };
     setSegments(newSegments);
     // In a real app, we'd consolidate this back to the parent
-    onChange(newSegments[0].unit); // Simple prop up for now
+    onChange(newSegments[0].unit); 
   };
 
   return (
@@ -143,12 +143,13 @@ export const ServiceManager = ({
     }
   };
 
+  // Use MOCK_SERVICE_CONFIGS to render available services, or static categories if simpler
   const categories = ['Grooming', 'Enrichment', 'Exercise', 'Health'];
 
   return (
     <div className="space-y-6">
       {categories.map(cat => {
-        // Filter config items by cat in a real app, mocking for now based on existing list in modal
+        // Filter mock items. In a real app this would come from a settings context.
         const catItems = [
            { name: 'Exit Bath', price: 30, category: 'Grooming' },
            { name: 'Nail Trim', price: 15, category: 'Grooming' },
@@ -209,8 +210,22 @@ export const ServiceManager = ({
 // --- Modals ---
 
 export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p.id === id);
+  const { pets, updatePet } = useData();
+  const pet = pets.find(p => p.id === id);
+  
+  // Form State
+  const [formData, setFormData] = useState(pet || {} as any);
+
+  useEffect(() => {
+    if (pet) setFormData(pet);
+  }, [pet]);
+
   if (!pet) return null;
+
+  const handleSave = () => {
+    updatePet(id, formData);
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit Pet: ${pet.name}`} size="lg">
@@ -221,19 +236,19 @@ export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div><Label>Name</Label><Input defaultValue={pet.name}/></div>
-            <div><Label>Breed</Label><Input defaultValue={pet.breed}/></div>
-            <div><Label>Weight (lbs)</Label><Input type="number" defaultValue={pet.weight}/></div>
-            <div><Label>Color</Label><Input defaultValue={pet.color}/></div>
-            <div><Label>Gender</Label><Select defaultValue={pet.gender}><option value="M">Male</option><option value="F">Female</option></Select></div>
-            <div><Label>Fixed</Label><Select defaultValue={pet.fixed ? 'Yes' : 'No'}><option value="Yes">Yes</option><option value="No">No</option></Select></div>
-            <div><Label>Birth Date</Label><Input type="date" defaultValue={pet.dob.split('T')[0]}/></div>
-            <div><Label>Microchip</Label><Input defaultValue={pet.microchip}/></div>
+            <div><Label>Name</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}/></div>
+            <div><Label>Breed</Label><Input value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})}/></div>
+            <div><Label>Weight (lbs)</Label><Input type="number" value={formData.weight} onChange={e => setFormData({...formData, weight: parseFloat(e.target.value)})}/></div>
+            <div><Label>Color</Label><Input value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})}/></div>
+            <div><Label>Gender</Label><Select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})}><option value="M">Male</option><option value="F">Female</option></Select></div>
+            <div><Label>Fixed</Label><Select value={formData.fixed ? 'Yes' : 'No'} onChange={e => setFormData({...formData, fixed: e.target.value === 'Yes'})}><option value="Yes">Yes</option><option value="No">No</option></Select></div>
+            <div><Label>Birth Date</Label><Input type="date" value={formData.dob.split('T')[0]} onChange={e => setFormData({...formData, dob: e.target.value})}/></div>
+            <div><Label>Microchip</Label><Input value={formData.microchip} onChange={e => setFormData({...formData, microchip: e.target.value})}/></div>
           </div>
 
           <div>
              <Label>Veterinary Clinic</Label>
-             <Select defaultValue={pet.vetClinicId || ''}>
+             <Select value={formData.vetClinicId || ''} onChange={e => setFormData({...formData, vetClinicId: e.target.value})}>
                 <option value="">-- Select Clinic --</option>
                 {MOCK_VET_CLINICS.map(vc => (
                    <option key={vc.id} value={vc.id}>{vc.name}</option>
@@ -244,7 +259,7 @@ export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
           <div className="border-t border-slate-100 pt-4">
             <Label>Feeding Instructions</Label>
             <div className="relative mt-1">
-               <Textarea defaultValue={pet.feedingInstructions} className="pr-24"/>
+               <Textarea value={formData.feedingInstructions} onChange={e => setFormData({...formData, feedingInstructions: e.target.value})} className="pr-24"/>
                <Button variant="ghost" size="sm" className="absolute right-2 top-2 text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100" title="Format with AI">
                   <Sparkles size={14} className="mr-1"/> AI Format
                </Button>
@@ -255,18 +270,28 @@ export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
              <Label>Medical Alerts & Behavior</Label>
              <div className="flex gap-2 mb-2 flex-wrap">
                 {['Aggressive', 'Meds', 'Separation Anxiety', 'Escape Artist'].map(tag => (
-                   <label key={tag} className={cn("px-3 py-1 rounded-full border text-xs font-medium cursor-pointer transition-colors select-none", pet.alerts.includes(tag) ? "bg-red-50 border-red-200 text-red-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")}>
-                      <input type="checkbox" className="hidden" defaultChecked={pet.alerts.includes(tag)} />
+                   <label key={tag} className={cn("px-3 py-1 rounded-full border text-xs font-medium cursor-pointer transition-colors select-none", (formData.alerts || []).includes(tag) ? "bg-red-50 border-red-200 text-red-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")}>
+                      <input 
+                        type="checkbox" 
+                        className="hidden" 
+                        checked={(formData.alerts || []).includes(tag)} 
+                        onChange={e => {
+                           const newAlerts = e.target.checked 
+                              ? [...(formData.alerts || []), tag]
+                              : (formData.alerts || []).filter((a: string) => a !== tag);
+                           setFormData({...formData, alerts: newAlerts});
+                        }}
+                      />
                       {tag}
                    </label>
                 ))}
              </div>
-             <Textarea defaultValue={pet.behaviorNotes} placeholder="Detailed notes..." />
+             <Textarea value={formData.behaviorNotes} onChange={e => setFormData({...formData, behaviorNotes: e.target.value})} placeholder="Detailed notes..." />
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Pet updated!'); onClose(); }}>Save Profile</Button>
+             <Button onClick={handleSave}>Save Profile</Button>
           </div>
        </div>
     </Modal>
@@ -274,37 +299,49 @@ export const EditPetModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const owner = MOCK_OWNERS.find(o => o.id === id);
+  const { owners, updateOwner } = useData();
+  const owner = owners.find(o => o.id === id);
+  const [formData, setFormData] = useState(owner || {} as any);
+
+  useEffect(() => {
+    if (owner) setFormData(owner);
+  }, [owner]);
+
   if (!owner) return null;
+
+  const handleSave = () => {
+    updateOwner(id, formData);
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit Owner: ${owner.name}`} size="lg">
        <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-             <div><Label>Full Name</Label><Input defaultValue={owner.name}/></div>
-             <div><Label>Email</Label><Input defaultValue={owner.email}/></div>
-             <div><Label>Phone</Label><Input defaultValue={owner.phone}/></div>
+             <div><Label>Full Name</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}/></div>
+             <div><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}/></div>
+             <div><Label>Phone</Label><Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}/></div>
              <div><Label>Alt. Phone</Label><Input placeholder="Work / Spouse"/></div>
-             <div className="col-span-2"><Label>Address</Label><Input defaultValue={owner.address}/></div>
+             <div className="col-span-2"><Label>Address</Label><Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})}/></div>
           </div>
 
           <div className="bg-slate-50 p-4 rounded border border-slate-100">
              <h4 className="font-bold text-sm text-slate-800 mb-3">Emergency Contact</h4>
              <div className="grid grid-cols-3 gap-3">
-                <div><Label>Name</Label><Input defaultValue={owner.emergencyContact?.name}/></div>
-                <div><Label>Relation</Label><Input defaultValue={owner.emergencyContact?.relation}/></div>
-                <div><Label>Phone</Label><Input defaultValue={owner.emergencyContact?.phone}/></div>
+                <div><Label>Name</Label><Input value={formData.emergencyContact?.name} onChange={e => setFormData({...formData, emergencyContact: {...formData.emergencyContact, name: e.target.value}})}/></div>
+                <div><Label>Relation</Label><Input value={formData.emergencyContact?.relation} onChange={e => setFormData({...formData, emergencyContact: {...formData.emergencyContact, relation: e.target.value}})}/></div>
+                <div><Label>Phone</Label><Input value={formData.emergencyContact?.phone} onChange={e => setFormData({...formData, emergencyContact: {...formData.emergencyContact, phone: e.target.value}})}/></div>
              </div>
           </div>
 
           <div>
              <Label>Administrative Notes</Label>
-             <Textarea defaultValue={owner.notes} className="h-20" placeholder="Gate codes, authorized pickups, etc."/>
+             <Textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="h-20" placeholder="Gate codes, authorized pickups, etc."/>
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Owner updated!'); onClose(); }}>Save Changes</Button>
+             <Button onClick={handleSave}>Save Changes</Button>
           </div>
        </div>
     </Modal>
@@ -312,12 +349,18 @@ export const EditOwnerModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-   const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-   const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+   const { reservations, pets, updateReservation } = useData();
+   const reservation = reservations.find(r => r.id === id);
+   const pet = pets.find(p => p.id === reservation?.petId);
    
    const [selectedServices, setSelectedServices] = useState<string[]>(reservation?.services || []);
 
    if (!reservation) return null;
+
+   const handleSave = () => {
+      updateReservation(id, { services: selectedServices });
+      onClose();
+   };
 
    return (
      <Modal isOpen={isOpen} onClose={onClose} title="Manage Services & Add-ons" size="md">
@@ -335,7 +378,7 @@ export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 
            <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert('Services updated!'); onClose(); }}>Update Reservation</Button>
+             <Button onClick={handleSave}>Update Reservation</Button>
            </div>
         </div>
      </Modal>
@@ -343,15 +386,21 @@ export const AddServiceModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const { reservations, pets, owners, updateReservation } = useData();
+  const reservation = reservations.find(r => r.id === id);
+  const pet = pets.find(p => p.id === reservation?.petId);
+  const owner = owners.find(o => o.id === reservation?.ownerId);
 
   // Mock balance check
   const balance = owner?.balance || 0;
   const isBalancePaid = balance <= 0;
 
   if (!reservation || !pet || !owner) return null;
+
+  const handleConfirm = () => {
+    updateReservation(id, { status: ReservationStatus.CheckedOut });
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Process Check Out" size="md">
@@ -415,7 +464,7 @@ export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
         <div className="flex justify-between pt-4 border-t border-slate-100 mt-2">
            <Button variant="ghost" onClick={onClose}>Cancel</Button>
            <Button 
-              onClick={() => { alert(`Checked out ${pet.name}!`); onClose(); }} 
+              onClick={handleConfirm} 
               className={cn("gap-2", isBalancePaid ? "bg-green-600 hover:bg-green-700" : "bg-amber-600 hover:bg-amber-700")}
            >
               <LogOut size={16}/> Confirm Check Out
@@ -427,13 +476,19 @@ export const CheckOutModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
+  const { reservations, pets, updateReservation } = useData();
+  const reservation = reservations.find(r => r.id === id);
+  const pet = pets.find(p => p.id === reservation?.petId);
   const [selectedUnit, setSelectedUnit] = useState(reservation?.lodging || '');
 
   const availableUnits = MOCK_UNITS.filter(u => u.status === 'Active');
 
   if (!reservation) return null;
+
+  const handleSave = () => {
+    updateReservation(id, { lodging: selectedUnit });
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Change Lodging Unit" size="sm">
@@ -467,7 +522,7 @@ export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 
           <div className="flex justify-end gap-2 pt-2">
              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-             <Button onClick={() => { alert(`Moved ${pet?.name} to ${selectedUnit}`); onClose(); }}>Update Location</Button>
+             <Button onClick={handleSave}>Update Location</Button>
           </div>
        </div>
     </Modal>
@@ -475,7 +530,8 @@ export const QuickLodgingModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 };
 
 export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const pet = MOCK_PETS.find(p => p.id === id);
+  const { pets, updatePet } = useData();
+  const pet = pets.find(p => p.id === id);
   const [selectedTag, setSelectedTag] = useState('Note');
   const [note, setNote] = useState('');
 
@@ -489,8 +545,9 @@ export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 
   const handleAdd = () => {
      // Logic to add tag would go here
-     // We are simulating adding a tag string potentially with a note "Tag:Note"
-     alert(`Added tag: ${selectedTag} with note: ${note}`);
+     // For demo, just appending the tag string to alerts
+     const newTag = note ? `${selectedTag}:${note}` : selectedTag;
+     updatePet(id, { alerts: [...(pet.alerts || []), newTag] });
      onClose();
   };
 
@@ -540,18 +597,41 @@ export const QuickTagModal = ({ isOpen, onClose, id }: BaseModalProps) => {
 // --- Main Edit Modal ---
 
 export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === id);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const { reservations, pets, owners, updateReservation } = useData();
+  const reservation = reservations.find(r => r.id === id);
+  const pet = pets.find(p => p.id === reservation?.petId);
+  const owner = owners.find(o => o.id === reservation?.ownerId);
   
   const [activeTab, setActiveTab] = useState('general');
   // Local state for edits
-  const [checkIn, setCheckIn] = useState(reservation?.checkIn || '');
-  const [checkOut, setCheckOut] = useState(reservation?.checkOut || '');
-  const [lodging, setLodging] = useState(reservation?.lodging || '');
-  const [services, setServices] = useState<string[]>(reservation?.services || []);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [lodging, setLodging] = useState('');
+  const [services, setServices] = useState<string[]>([]);
+  const [status, setStatus] = useState<ReservationStatus>(ReservationStatus.Confirmed);
+  const [type, setType] = useState<ServiceType>(ServiceType.Boarding);
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (reservation) {
+      setCheckIn(reservation.checkIn);
+      setCheckOut(reservation.checkOut);
+      setLodging(reservation.lodging || '');
+      setServices(reservation.services);
+      setStatus(reservation.status);
+      setType(reservation.type);
+      setNotes(reservation.notes || '');
+    }
+  }, [reservation]);
 
   if (!reservation) return null;
+
+  const handleSave = () => {
+    updateReservation(id, {
+      checkIn, checkOut, lodging, services, status, type, notes
+    });
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit Reservation #${reservation.id}`} size="lg">
@@ -613,13 +693,13 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
                 </div>
                 <div>
                   <Label>Service Type</Label>
-                  <Select defaultValue={reservation.type}>
+                  <Select value={type} onChange={(e) => setType(e.target.value as ServiceType)}>
                     {Object.values(ServiceType).map(t => <option key={t} value={t}>{t}</option>)}
                   </Select>
                 </div>
                 <div>
                   <Label>Reservation Status</Label>
-                  <Select defaultValue={reservation.status}>
+                  <Select value={status} onChange={(e) => setStatus(e.target.value as ReservationStatus)}>
                     {Object.values(ReservationStatus).map(s => <option key={s} value={s}>{s}</option>)}
                   </Select>
                 </div>
@@ -627,7 +707,7 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
 
               <div>
                 <Label>Internal Notes</Label>
-                <Textarea defaultValue={reservation.notes} placeholder="Special handling, belongings, etc..." className="h-32" />
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, belongings, etc..." className="h-32" />
               </div>
 
               <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-lg flex gap-3">
@@ -697,7 +777,7 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
            <Button variant="danger" size="sm" className="gap-2"><Trash2 size={14}/> Cancel</Button>
            <div className="flex gap-2">
              <Button variant="ghost" onClick={onClose}>Close</Button>
-             <Button onClick={() => { alert('Changes saved!'); onClose(); }} className="gap-2"><Check size={16}/> Save Changes</Button>
+             <Button onClick={handleSave} className="gap-2"><Check size={16}/> Save Changes</Button>
            </div>
         </div>
       </div>

@@ -33,11 +33,44 @@
                 800: 'var(--color-primary-800)',
                 900: 'var(--color-primary-900)',
               },
-              // Remap slate-950 to be our custom secondary/dark color for sidebars
+              // Sidebar / Dark Mode
               slate: {
-                850: 'var(--color-secondary-900)', // Hover state
+                850: 'var(--color-secondary-850)', 
                 900: 'var(--color-secondary-900)', 
-                950: 'var(--color-secondary-950)', // Main Sidebar
+                950: 'var(--color-secondary-950)', 
+              },
+              // Semantic Colors (Hijacking standard names for deep theming)
+              green: {
+                50: 'var(--color-success-50)',
+                100: 'var(--color-success-100)',
+                500: 'var(--color-success-500)',
+                600: 'var(--color-success-600)',
+                700: 'var(--color-success-700)',
+                800: 'var(--color-success-800)',
+              },
+              red: {
+                50: 'var(--color-danger-50)',
+                100: 'var(--color-danger-100)',
+                500: 'var(--color-danger-500)',
+                600: 'var(--color-danger-600)',
+                700: 'var(--color-danger-700)',
+                800: 'var(--color-danger-800)',
+              },
+              amber: {
+                50: 'var(--color-warning-50)',
+                100: 'var(--color-warning-100)',
+                500: 'var(--color-warning-500)',
+                600: 'var(--color-warning-600)',
+                700: 'var(--color-warning-700)',
+                800: 'var(--color-warning-800)',
+              },
+              blue: {
+                50: 'var(--color-info-50)',
+                100: 'var(--color-info-100)',
+                500: 'var(--color-info-500)',
+                600: 'var(--color-info-600)',
+                700: 'var(--color-info-700)',
+                800: 'var(--color-info-800)',
               }
             }
           }
@@ -50,6 +83,7 @@
         --font-sans: 'Inter';
         --radius: 0.5rem;
         
+        /* Primary */
         --color-primary-50: #f0f9ff;
         --color-primary-100: #e0f2fe;
         --color-primary-500: #0ea5e9;
@@ -57,8 +91,42 @@
         --color-primary-700: #0369a1;
         --color-primary-900: #0c4a6e;
 
-        --color-secondary-950: #020617; /* Default Slate 950 */
+        /* Secondary / Sidebar */
+        --color-secondary-950: #020617;
         --color-secondary-900: #0f172a;
+        --color-secondary-850: #1e293b;
+
+        /* Success (Green) */
+        --color-success-50: #f0fdf4;
+        --color-success-100: #dcfce7;
+        --color-success-500: #22c55e;
+        --color-success-600: #16a34a;
+        --color-success-700: #15803d;
+        --color-success-800: #166534;
+
+        /* Danger (Red) */
+        --color-danger-50: #fef2f2;
+        --color-danger-100: #fee2e2;
+        --color-danger-500: #ef4444;
+        --color-danger-600: #dc2626;
+        --color-danger-700: #b91c1c;
+        --color-danger-800: #991b1b;
+
+        /* Warning (Amber) */
+        --color-warning-50: #fffbeb;
+        --color-warning-100: #fef3c7;
+        --color-warning-500: #f59e0b;
+        --color-warning-600: #d97706;
+        --color-warning-700: #b45309;
+        --color-warning-800: #92400e;
+
+        /* Info (Blue) */
+        --color-info-50: #eff6ff;
+        --color-info-100: #dbeafe;
+        --color-info-500: #3b82f6;
+        --color-info-600: #2563eb;
+        --color-info-700: #1d4ed8;
+        --color-info-800: #1e40af;
       }
 
       /* Custom scrollbar for high density lists */

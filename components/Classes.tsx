@@ -6,16 +6,41 @@ import {
   DollarSign, Edit2, Trash2, User, Dog
 } from 'lucide-react';
 import { Card, Button, Input, Select, Badge, cn, Modal, Label, Tabs } from './Common';
-import { MOCK_CLASS_SESSIONS, MOCK_CLASS_TYPES, MOCK_CLASS_ENROLLMENTS, MOCK_PETS, MOCK_OWNERS, MOCK_USERS } from '../constants';
+import { MOCK_CLASS_TYPES, MOCK_USERS } from '../constants';
+import { useData } from './DataContext';
 import { ClassSession, ClassEnrollment } from '../types';
 
 export const Classes = () => {
+  const { classSessions, classEnrollments, addClassSession } = useData();
   const [activeTab, setActiveTab] = useState('schedule');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isNewClassOpen, setIsNewClassOpen] = useState(false);
 
   // Derived Data
-  const upcomingSessions = MOCK_CLASS_SESSIONS.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const upcomingSessions = classSessions.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+  // New Class Form State
+  const [newClassType, setNewClassType] = useState(MOCK_CLASS_TYPES[0].id);
+  const [newClassDate, setNewClassDate] = useState('');
+  const [newClassTime, setNewClassTime] = useState('');
+  const [newClassInstructor, setNewClassInstructor] = useState(MOCK_USERS[0].id);
+  const [newClassCapacity, setNewClassCapacity] = useState(8);
+
+  const handleScheduleClass = () => {
+    if (!newClassDate || !newClassTime) return;
+    const startTime = new Date(`${newClassDate}T${newClassTime}`);
+    const session: ClassSession = {
+      id: `cs${Date.now()}`,
+      classTypeId: newClassType,
+      startTime: startTime.toISOString(),
+      durationMinutes: 60,
+      instructorId: newClassInstructor,
+      capacity: newClassCapacity,
+      status: 'Scheduled'
+    };
+    addClassSession(session);
+    setIsNewClassOpen(false);
+  };
 
   return (
     <div className="flex h-[calc(100vh-100px)] gap-6 animate-in fade-in duration-300">
@@ -59,7 +84,7 @@ export const Classes = () => {
                   {upcomingSessions.map(session => {
                      const type = MOCK_CLASS_TYPES.find(t => t.id === session.classTypeId);
                      const instructor = MOCK_USERS.find(u => u.id === session.instructorId);
-                     const enrolledCount = MOCK_CLASS_ENROLLMENTS.filter(e => e.sessionId === session.id && e.status === 'Enrolled').length;
+                     const enrolledCount = classEnrollments.filter(e => e.sessionId === session.id && e.status === 'Enrolled').length;
                      const isFull = enrolledCount >= session.capacity;
                      
                      return (
@@ -133,21 +158,21 @@ export const Classes = () => {
          <div className="space-y-4">
             <div>
                <Label>Class Type</Label>
-               <Select>
+               <Select value={newClassType} onChange={(e) => setNewClassType(e.target.value)}>
                   {MOCK_CLASS_TYPES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <div><Label>Date</Label><Input type="date"/></div>
-               <div><Label>Time</Label><Input type="time"/></div>
+               <div><Label>Date</Label><Input type="date" onChange={(e) => setNewClassDate(e.target.value)}/></div>
+               <div><Label>Time</Label><Input type="time" onChange={(e) => setNewClassTime(e.target.value)}/></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <div><Label>Instructor</Label><Select><option>Sarah Smith</option><option>John Doe</option></Select></div>
-               <div><Label>Capacity</Label><Input type="number" defaultValue={8}/></div>
+               <div><Label>Instructor</Label><Select value={newClassInstructor} onChange={(e) => setNewClassInstructor(e.target.value)}>{MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></div>
+               <div><Label>Capacity</Label><Input type="number" value={newClassCapacity} onChange={(e) => setNewClassCapacity(parseInt(e.target.value))}/></div>
             </div>
             <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
                <Button variant="ghost" onClick={() => setIsNewClassOpen(false)}>Cancel</Button>
-               <Button onClick={() => setIsNewClassOpen(false)}>Schedule Class</Button>
+               <Button onClick={handleScheduleClass}>Schedule Class</Button>
             </div>
          </div>
       </Modal>
@@ -156,14 +181,30 @@ export const Classes = () => {
 };
 
 const ClassDetail = ({ sessionId }: { sessionId: string }) => {
-   const session = MOCK_CLASS_SESSIONS.find(s => s.id === sessionId);
+   const { classSessions, classEnrollments, pets, owners, enrollPetInClass, updateClassEnrollment } = useData();
+   const session = classSessions.find(s => s.id === sessionId);
    const type = MOCK_CLASS_TYPES.find(t => t.id === session?.classTypeId);
    const instructor = MOCK_USERS.find(u => u.id === session?.instructorId);
-   const enrollments = MOCK_CLASS_ENROLLMENTS.filter(e => e.sessionId === sessionId);
+   const enrollments = classEnrollments.filter(e => e.sessionId === sessionId);
    
    const [isAddPetOpen, setIsAddPetOpen] = useState(false);
+   const [searchPet, setSearchPet] = useState('');
 
    if (!session || !type) return null;
+
+   const handleEnroll = (petId: string, ownerId: string) => {
+      const enrollment: ClassEnrollment = {
+         id: `ce${Date.now()}`,
+         sessionId,
+         petId,
+         ownerId,
+         status: 'Enrolled',
+         paymentMethod: 'Unpaid',
+         checkedIn: false
+      };
+      enrollPetInClass(enrollment);
+      setIsAddPetOpen(false);
+   };
 
    return (
       <div className="flex flex-col h-full">
@@ -208,12 +249,15 @@ const ClassDetail = ({ sessionId }: { sessionId: string }) => {
                </thead>
                <tbody className="divide-y divide-slate-100">
                   {enrollments.map(enrollment => {
-                     const pet = MOCK_PETS.find(p => p.id === enrollment.petId);
-                     const owner = MOCK_OWNERS.find(o => o.id === enrollment.ownerId);
+                     const pet = pets.find(p => p.id === enrollment.petId);
+                     const owner = owners.find(o => o.id === enrollment.ownerId);
                      return (
                         <tr key={enrollment.id} className="hover:bg-slate-50 group">
                            <td className="px-6 py-4">
-                              <div className={cn("h-4 w-4 rounded-full border flex items-center justify-center cursor-pointer transition-colors", enrollment.checkedIn ? "bg-green-500 border-green-500 text-white" : "border-slate-300 hover:border-green-500")}>
+                              <div 
+                                onClick={() => updateClassEnrollment(enrollment.id, { checkedIn: !enrollment.checkedIn })}
+                                className={cn("h-4 w-4 rounded-full border flex items-center justify-center cursor-pointer transition-colors", enrollment.checkedIn ? "bg-green-500 border-green-500 text-white" : "border-slate-300 hover:border-green-500")}
+                              >
                                  {enrollment.checkedIn && <CheckCircle size={10}/>}
                               </div>
                            </td>
@@ -258,36 +302,51 @@ const ClassDetail = ({ sessionId }: { sessionId: string }) => {
                   <Label>Search Pet or Owner</Label>
                   <div className="relative">
                      <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                     <Input placeholder="Type name..." className="pl-9"/>
+                     <Input 
+                        placeholder="Type name..." 
+                        className="pl-9"
+                        value={searchPet}
+                        onChange={(e) => setSearchPet(e.target.value)}
+                        autoFocus
+                     />
                   </div>
                </div>
                
                <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
-                  {/* Mock Search Result */}
-                  <div className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b border-slate-100">
-                     <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600">B</div>
-                        <div>
-                           <div className="font-bold text-sm">Bella (Labrador)</div>
-                           <div className="text-xs text-slate-500">Owner: Alice Johnson</div>
+                  {pets.filter(p => p.name.toLowerCase().includes(searchPet.toLowerCase())).map(p => {
+                     const owner = owners.find(o => o.id === p.ownerId);
+                     return (
+                        <div 
+                           key={p.id} 
+                           onClick={() => handleEnroll(p.id, p.ownerId)}
+                           className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b border-slate-100"
+                        >
+                           <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 bg-slate-200 rounded-full overflow-hidden">
+                                 <img src={p.photoUrl} className="w-full h-full object-cover"/>
+                              </div>
+                              <div>
+                                 <div className="font-bold text-sm">{p.name} ({p.breed})</div>
+                                 <div className="text-xs text-slate-500">Owner: {owner?.name}</div>
+                              </div>
+                           </div>
+                           <Plus size={16} className="text-slate-400"/>
                         </div>
-                     </div>
-                     <Badge variant="outline">Has Package (2 credits left)</Badge>
-                  </div>
+                     );
+                  })}
                </div>
 
                <div>
                   <Label>Payment Method</Label>
                   <Select>
+                     <option>Charge Account (${type.defaultPrice})</option>
                      <option>Use Package Credit (1 Credit)</option>
-                     <option>Charge Account ($35.00)</option>
-                     <option>Single Class Drop-In ($40.00)</option>
+                     <option>Single Class Drop-In</option>
                   </Select>
                </div>
 
                <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
                   <Button variant="ghost" onClick={() => setIsAddPetOpen(false)}>Cancel</Button>
-                  <Button onClick={() => setIsAddPetOpen(false)}>Enroll Pet</Button>
                </div>
             </div>
          </Modal>

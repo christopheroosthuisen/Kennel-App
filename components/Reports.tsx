@@ -219,7 +219,7 @@ const ReportRunner = ({ reportId, onBack }: { reportId: string, onBack: () => vo
             <>
                <Button 
                   size="sm" 
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 border-none"
+                  className="bg-primary-600 hover:bg-primary-700 text-white gap-2 border-none"
                   onClick={() => setShowCampaignModal(true)}
                >
                   <Megaphone size={14}/> Add to Campaign
@@ -233,11 +233,11 @@ const ReportRunner = ({ reportId, onBack }: { reportId: string, onBack: () => vo
       {/* Campaign Modal */}
       <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Add to Marketing Campaign" size="md">
          <div className="space-y-4">
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex gap-3">
-               <Users className="text-indigo-600 shrink-0" size={20}/>
+            <div className="bg-primary-50 border border-primary-100 rounded-lg p-4 flex gap-3">
+               <Users className="text-primary-600 shrink-0" size={20}/>
                <div>
-                  <h4 className="font-bold text-indigo-900 text-sm">Target Audience</h4>
-                  <p className="text-xs text-indigo-700">You have selected <strong>{selectedRows.length}</strong> records from the <em>{reportConfig.name}</em> report.</p>
+                  <h4 className="font-bold text-primary-900 text-sm">Target Audience</h4>
+                  <p className="text-xs text-primary-700">You have selected <strong>{selectedRows.length}</strong> records from the <em>{reportConfig.name}</em> report.</p>
                </div>
             </div>
 

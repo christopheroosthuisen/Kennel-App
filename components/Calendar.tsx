@@ -7,8 +7,9 @@ import {
 } from 'lucide-react';
 import { Card, Button, Select, Badge, cn, Modal, Label, Input, Textarea, Tabs } from './Common';
 import { EditReservationModal } from './EditModals';
-import { MOCK_RESERVATIONS, MOCK_UNITS, MOCK_PETS, MOCK_CLASS_SESSIONS, MOCK_CLASS_TYPES } from '../constants';
+import { MOCK_CLASS_TYPES, MOCK_UNITS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
+import { useData } from './DataContext';
 
 // --- Types for Calendar ---
 
@@ -25,84 +26,9 @@ interface CalendarEvent {
   color?: string;
 }
 
-// --- Helper Functions ---
-
-const getEventsForDate = (date: Date): CalendarEvent[] => {
-  const events: CalendarEvent[] = [];
-  const dateStr = date.toDateString();
-
-  // 1. Map Reservations to Events
-  MOCK_RESERVATIONS.forEach(res => {
-    const pet = MOCK_PETS.find(p => p.id === res.petId);
-    const checkIn = new Date(res.checkIn);
-    const checkOut = new Date(res.checkOut);
-
-    // Arrivals
-    if (checkIn.toDateString() === dateStr) {
-      if (res.type === ServiceType.Grooming || res.type === ServiceType.Training) {
-        // Service Appointment
-        events.push({
-          id: `serv-${res.id}`,
-          title: `${res.type}: ${pet?.name}`,
-          type: 'service',
-          start: checkIn,
-          petName: pet?.name,
-          details: res.services.join(', '),
-          color: res.type === ServiceType.Grooming ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'
-        });
-      } else {
-        // Check-in
-        events.push({
-          id: `in-${res.id}`,
-          title: `In: ${pet?.name} (${res.type})`,
-          type: 'arrival',
-          start: checkIn,
-          petName: pet?.name,
-          details: res.lodging,
-          color: 'bg-green-100 text-green-700 border-green-200'
-        });
-      }
-    }
-
-    // Departures (Only for Boarding/Daycare)
-    if (checkOut.toDateString() === dateStr && (res.type === ServiceType.Boarding || res.type === ServiceType.Daycare)) {
-      events.push({
-        id: `out-${res.id}`,
-        title: `Out: ${pet?.name}`,
-        type: 'departure',
-        start: checkOut,
-        petName: pet?.name,
-        color: 'bg-amber-100 text-amber-700 border-amber-200'
-      });
-    }
-  });
-
-  // 2. Map Group Classes (from Shared Constants)
-  MOCK_CLASS_SESSIONS.forEach(cls => {
-    const classStart = new Date(cls.startTime);
-    if (classStart.toDateString() === dateStr) {
-       const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId);
-       const end = new Date(classStart.getTime() + cls.durationMinutes * 60000);
-       
-       events.push({
-         id: `class-${cls.id}`,
-         title: classType?.name || 'Group Class',
-         type: 'class',
-         start: classStart,
-         end: end,
-         details: `Capacity: ${cls.capacity}`,
-         color: classType?.color || 'bg-blue-50 text-blue-700 border-blue-200'
-       });
-    }
-  });
-
-  return events.sort((a, b) => a.start.getTime() - b.start.getTime());
-};
-
 // --- Components ---
 
-const DayCell = ({ date, isToday, isSelected, onClick }: { date: Date, isToday: boolean, isSelected: boolean, onClick: () => void }) => {
-  const events = getEventsForDate(date);
+const DayCell = ({ date, isToday, isSelected, onClick, events }: { date: Date, isToday: boolean, isSelected: boolean, onClick: () => void, events: CalendarEvent[] }) => {
   const maxDisplay = 3;
   const overflow = events.length - maxDisplay;
 
@@ -149,6 +75,7 @@ const DayCell = ({ date, isToday, isSelected, onClick }: { date: Date, isToday: 
 };
 
 const FacilityScheduleView = ({ currentDate, setCurrentDate }: { currentDate: Date, setCurrentDate: (d: Date) => void }) => {
+  const { reservations, pets, classSessions } = useData();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // Generate calendar grid
@@ -176,6 +103,75 @@ const FacilityScheduleView = ({ currentDate, setCurrentDate }: { currentDate: Da
   });
   
   const calendarGrid = [...allDays, ...suffixDays];
+
+  // Logic to get events
+  const getEventsForDate = (date: Date): CalendarEvent[] => {
+    const events: CalendarEvent[] = [];
+    const dateStr = date.toDateString();
+
+    reservations.forEach(res => {
+      const pet = pets.find(p => p.id === res.petId);
+      const checkIn = new Date(res.checkIn);
+      const checkOut = new Date(res.checkOut);
+
+      // Arrivals
+      if (checkIn.toDateString() === dateStr) {
+        if (res.type === ServiceType.Grooming || res.type === ServiceType.Training) {
+          events.push({
+            id: `serv-${res.id}`,
+            title: `${res.type}: ${pet?.name}`,
+            type: 'service',
+            start: checkIn,
+            petName: pet?.name,
+            details: res.services.join(', '),
+            color: res.type === ServiceType.Grooming ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+          });
+        } else {
+          events.push({
+            id: `in-${res.id}`,
+            title: `In: ${pet?.name} (${res.type})`,
+            type: 'arrival',
+            start: checkIn,
+            petName: pet?.name,
+            details: res.lodging,
+            color: 'bg-green-100 text-green-700 border-green-200'
+          });
+        }
+      }
+
+      // Departures
+      if (checkOut.toDateString() === dateStr && (res.type === ServiceType.Boarding || res.type === ServiceType.Daycare)) {
+        events.push({
+          id: `out-${res.id}`,
+          title: `Out: ${pet?.name}`,
+          type: 'departure',
+          start: checkOut,
+          petName: pet?.name,
+          color: 'bg-amber-100 text-amber-700 border-amber-200'
+        });
+      }
+    });
+
+    classSessions.forEach(cls => {
+      const classStart = new Date(cls.startTime);
+      if (classStart.toDateString() === dateStr) {
+         const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId);
+         const end = new Date(classStart.getTime() + cls.durationMinutes * 60000);
+         
+         events.push({
+           id: `class-${cls.id}`,
+           title: classType?.name || 'Group Class',
+           type: 'class',
+           start: classStart,
+           end: end,
+           details: `Capacity: ${cls.capacity}`,
+           color: classType?.color || 'bg-blue-50 text-blue-700 border-blue-200'
+         });
+      }
+    });
+
+    return events.sort((a, b) => a.start.getTime() - b.start.getTime());
+  };
 
   // Side Panel Data
   const selectedDateEvents = getEventsForDate(selectedDate);
@@ -217,6 +213,7 @@ const FacilityScheduleView = ({ currentDate, setCurrentDate }: { currentDate: Da
                         isToday={isToday} 
                         isSelected={isSelected}
                         onClick={() => setSelectedDate(date)} 
+                        events={getEventsForDate(date)}
                      />
                   </div>
                );
@@ -298,6 +295,7 @@ const FacilityScheduleView = ({ currentDate, setCurrentDate }: { currentDate: Da
 };
 
 const LodgingOccupancyView = ({ currentDate, setCurrentDate }: { currentDate: Date, setCurrentDate: (d: Date) => void }) => {
+  const { reservations, pets } = useData();
   const [selectedResId, setSelectedResId] = useState<string | null>(null);
   const daysToShow = 14; 
   
@@ -341,12 +339,12 @@ const LodgingOccupancyView = ({ currentDate, setCurrentDate }: { currentDate: Da
                {/* Days Cells */}
                {dates.map(date => {
                  // Mock collision detection
-                 const res = MOCK_RESERVATIONS.find(r => 
+                 const res = reservations.find(r => 
                     r.lodging === unit.id && 
                     new Date(r.checkIn) <= date && 
                     new Date(r.checkOut) >= date
                  );
-                 const pet = res ? MOCK_PETS.find(p => p.id === res.petId) : null;
+                 const pet = res ? pets.find(p => p.id === res.petId) : null;
                  
                  // Determine cell style based on reservation part
                  const isCheckIn = res && new Date(res.checkIn).toDateString() === date.toDateString();

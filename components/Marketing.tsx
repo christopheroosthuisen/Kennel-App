@@ -17,7 +17,7 @@ const MarketingDashboard = () => (
   <div className="space-y-6 animate-in fade-in duration-300">
      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-           { label: 'Active Campaigns', value: '3', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: Megaphone },
+           { label: 'Active Campaigns', value: '3', color: 'text-primary-600', bg: 'bg-primary-50', icon: Megaphone },
            { label: 'Emails Sent (30d)', value: '1,240', color: 'text-blue-600', bg: 'bg-blue-50', icon: Mail },
            { label: 'SMS Sent (30d)', value: '450', color: 'text-green-600', bg: 'bg-green-50', icon: MessageSquare },
            { label: 'Inbound Calls', value: '82', color: 'text-orange-600', bg: 'bg-orange-50', icon: Phone },
@@ -62,7 +62,7 @@ const MarketingDashboard = () => (
            <h3 className="font-bold text-slate-800 mb-4">Engagement by Channel</h3>
            <div className="h-48 flex items-end justify-between gap-2 px-4 border-b border-slate-200">
               {[65, 40, 75, 50, 85, 60, 90].map((h, i) => (
-                 <div key={i} className="w-full bg-indigo-500 rounded-t-sm opacity-80 hover:opacity-100 transition-all relative group" style={{ height: `${h}%` }}>
+                 <div key={i} className="w-full bg-primary-500 rounded-t-sm opacity-80 hover:opacity-100 transition-all relative group" style={{ height: `${h}%` }}>
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{h} Engagements</div>
                  </div>
               ))}
@@ -394,7 +394,7 @@ const CallTracking = () => {
                                     <div className="h-8 bg-slate-100 rounded-full px-3 flex items-center gap-2 animate-pulse min-w-[120px]">
                                        <Pause size={14} className="cursor-pointer" onClick={() => togglePlay(call.id)}/>
                                        <div className="h-1 bg-slate-300 flex-1 rounded-full overflow-hidden">
-                                          <div className="h-full bg-indigo-500 w-1/2"></div>
+                                          <div className="h-full bg-primary-500 w-1/2"></div>
                                        </div>
                                     </div>
                                  ) : (

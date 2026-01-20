@@ -11,10 +11,12 @@ import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, B
 import { EditOwnerModal, EditPetModal } from './EditModals';
 import { useCommunication } from './Messaging';
 import { useTeamChat } from './TeamChatContext';
-import { MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_INVOICES, MOCK_VET_CLINICS } from '../constants';
-import { Pet, Vaccine } from '../types';
+import { MOCK_VET_CLINICS } from '../constants'; // Keep vet clinics static for now
+import { Pet, Vaccine, Owner } from '../types';
+import { useData } from './DataContext';
 
 export const Profiles = () => {
+  const { owners, pets, invoices, reservations, addOwner, addPet } = useData();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('type') || 'owners';
   const viewMode = searchParams.get('view') || 'grid';
@@ -59,8 +61,8 @@ export const Profiles = () => {
     });
   };
 
-  const filteredOwners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(search.toLowerCase()) || o.email.includes(search));
-  const filteredPets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredOwners = owners.filter(o => o.name.toLowerCase().includes(search.toLowerCase()) || o.email.includes(search));
+  const filteredPets = pets.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   const sortedOwners = getSortedData(filteredOwners);
   const sortedPets = getSortedData(filteredPets);
@@ -68,6 +70,46 @@ export const Profiles = () => {
   const selectAll = () => {
     if (activeTab === 'owners') setSelectedIds(filteredOwners.map(o => o.id));
     else setSelectedIds(filteredPets.map(p => p.id));
+  };
+
+  const handleCreateOwner = () => {
+    // Logic to collect form data would be here. Using mock data for 'New' entry.
+    const newOwner: Owner = {
+      id: `o${Date.now()}`,
+      name: 'New Client',
+      phone: '555-0000',
+      email: 'new@client.com',
+      balance: 0,
+      address: '123 New St',
+      notes: '',
+      tags: [],
+      files: []
+    };
+    addOwner(newOwner);
+    setIsNewOwnerOpen(false);
+    alert("New Owner Created (Mock Data used for demo)");
+  };
+
+  const handleCreatePet = () => {
+    // Logic to collect form data
+    const newPet: Pet = {
+      id: `p${Date.now()}`,
+      ownerId: owners[0]?.id || 'o1',
+      name: 'New Pet',
+      breed: 'Mixed',
+      weight: 10,
+      dob: new Date().toISOString(),
+      gender: 'M',
+      fixed: false,
+      vaccineStatus: 'Valid',
+      photoUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&h=200&fit=crop',
+      vet: 'Unknown',
+      feedingInstructions: 'Standard',
+      alerts: []
+    };
+    addPet(newPet);
+    setIsNewPetOpen(false);
+    alert("New Pet Created (Mock Data used for demo)");
   };
 
   if (selectedId) {
@@ -111,8 +153,8 @@ export const Profiles = () => {
          activeTab={activeTab} 
          onChange={(id) => { updateParams({ type: id }); setSelectedIds([]); }} 
          tabs={[
-           { id: 'owners', label: 'Owners', count: MOCK_OWNERS.length },
-           { id: 'pets', label: 'Pets', count: MOCK_PETS.length }
+           { id: 'owners', label: 'Owners', count: owners.length },
+           { id: 'pets', label: 'Pets', count: pets.length }
          ]} 
        />
 
@@ -155,7 +197,7 @@ export const Profiles = () => {
                         <div className="flex items-center gap-2"><Mail size={14}/> {owner.email}</div>
                       </div>
                       <div className="pt-2 border-t border-slate-100 flex gap-2 flex-wrap mt-auto">
-                        {MOCK_PETS.filter(p => p.ownerId === owner.id).map(p => (
+                        {pets.filter(p => p.ownerId === owner.id).map(p => (
                           <React.Fragment key={p.id}>
                             <Badge variant="outline" className="bg-slate-50">{p.name}</Badge>
                           </React.Fragment>
@@ -233,7 +275,7 @@ export const Profiles = () => {
                         </td>
                         <td className="px-6 py-4">
                            <div className="flex gap-1">
-                              {MOCK_PETS.filter(p => p.ownerId === owner.id).map(p => (
+                              {pets.filter(p => p.ownerId === owner.id).map(p => (
                                  <React.Fragment key={p.id}>
                                     <Badge variant="outline" className="text-[10px] bg-slate-50">{p.name}</Badge>
                                  </React.Fragment>
@@ -281,7 +323,7 @@ export const Profiles = () => {
           }
        />
 
-       {/* New Owner Modal (Reusing EditOwnerModal style/logic would be ideal, but keeping separate for create vs edit clarity for now) */}
+       {/* New Owner Modal */}
        <Modal isOpen={isNewOwnerOpen} onClose={() => setIsNewOwnerOpen(false)} title="New Client Registration" size="lg">
          <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
@@ -297,7 +339,7 @@ export const Profiles = () => {
             </div>
             <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
               <Button variant="ghost" onClick={() => setIsNewOwnerOpen(false)}>Cancel</Button>
-              <Button onClick={() => setIsNewOwnerOpen(false)}>Create Profile</Button>
+              <Button onClick={handleCreateOwner}>Create Profile</Button>
             </div>
          </div>
        </Modal>
@@ -319,7 +361,7 @@ export const Profiles = () => {
             </div>
             <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
               <Button variant="ghost" onClick={() => setIsNewPetOpen(false)}>Cancel</Button>
-              <Button onClick={() => setIsNewPetOpen(false)}>Create Pet</Button>
+              <Button onClick={handleCreatePet}>Create Pet</Button>
             </div>
          </div>
        </Modal>
@@ -491,10 +533,10 @@ const MedicalPanel = ({ pet }: { pet: Pet }) => {
 };
 
 const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
-  const owner = MOCK_OWNERS.find(o => o.id === id);
-  const pets = MOCK_PETS.filter(p => p.ownerId === id);
-  const reservations = MOCK_RESERVATIONS.filter(r => r.ownerId === id);
-  const invoices = MOCK_INVOICES.filter(i => i.ownerId === id);
+  const { owners, pets, reservations } = useData();
+  const owner = owners.find(o => o.id === id);
+  const ownerPets = pets.filter(p => p.ownerId === id);
+  const ownerReservations = reservations.filter(r => r.ownerId === id);
   const { openDiscuss } = useTeamChat();
   const [tab, setTab] = useState('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -530,7 +572,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                  ${owner.balance.toFixed(2)}
               </div>
               <div className="flex gap-2 justify-end">
-                 <Button size="sm" variant="ghost" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none gap-2" onClick={() => openDiscuss({ type: 'owner', id: owner.id, title: owner.name, subtitle: 'Profile Flag' })}>
+                 <Button size="sm" variant="ghost" className="bg-primary-50 text-primary-700 hover:bg-primary-100 border-none gap-2" onClick={() => openDiscuss({ type: 'owner', id: owner.id, title: owner.name, subtitle: 'Profile Flag' })}>
                     <MessageCircle size={14}/> Flag for Review
                  </Button>
                  <Button size="sm" variant="outline" onClick={() => setIsEditOpen(true)}>Edit Profile</Button>
@@ -558,7 +600,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
           <div className="space-y-6">
              <Card className="p-4 space-y-3">
                <h3 className="font-bold text-slate-900 flex items-center gap-2"><Dog size={18}/> Household Pets</h3>
-               {pets.map(pet => (
+               {ownerPets.map(pet => (
                  <div key={pet.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer group transition-colors border border-transparent hover:border-slate-100">
                    <img src={pet.photoUrl} className="h-10 w-10 rounded-full object-cover" alt="" />
                    <div>
@@ -593,10 +635,10 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                    <tr><th className="p-3">Date</th><th className="p-3">Pet</th><th className="p-3">Service</th><th className="p-3">Status</th></tr>
                  </thead>
                  <tbody>
-                   {reservations.map(r => (
+                   {ownerReservations.map(r => (
                      <tr key={r.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                        <td className="p-3 font-medium text-slate-700">{new Date(r.checkIn).toLocaleDateString()}</td>
-                       <td className="p-3">{pets.find(p => p.id === r.petId)?.name}</td>
+                       <td className="p-3">{ownerPets.find(p => p.id === r.petId)?.name}</td>
                        <td className="p-3">{r.type}</td>
                        <td className="p-3"><Badge>{r.status}</Badge></td>
                      </tr>
@@ -628,7 +670,8 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
 };
 
 const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
-  const pet = MOCK_PETS.find(p => p.id === id);
+  const { pets } = useData();
+  const pet = pets.find(p => p.id === id);
   const { openDiscuss } = useTeamChat();
   const [tab, setTab] = useState('care');
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -657,7 +700,7 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
                   </div>
                </div>
                <div className="flex gap-2">
-                  <Button variant="ghost" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-none gap-2" onClick={() => openDiscuss({ type: 'pet', id: pet.id, title: pet.name, subtitle: 'Pet Profile Review' })}>
+                  <Button variant="ghost" className="bg-primary-50 text-primary-700 hover:bg-primary-100 border-none gap-2" onClick={() => openDiscuss({ type: 'pet', id: pet.id, title: pet.name, subtitle: 'Pet Profile Review' })}>
                      <MessageCircle size={14}/> Flag for Review
                   </Button>
                   <Button variant="outline" onClick={() => setIsEditOpen(true)}>Edit Profile</Button>

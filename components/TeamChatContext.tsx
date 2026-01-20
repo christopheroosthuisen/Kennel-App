@@ -90,14 +90,14 @@ export const TeamChatProvider = ({ children }: { children?: ReactNode }) => {
       {/* Discussion Modal */}
       <Modal isOpen={isDiscussOpen} onClose={() => setIsDiscussOpen(false)} title="Discuss with Team" size="md">
          <div className="space-y-4">
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-start gap-3">
-               <div className="bg-white p-2 rounded border border-indigo-100 shrink-0 text-indigo-600">
+            <div className="bg-primary-50 border border-primary-100 rounded-lg p-3 flex items-start gap-3">
+               <div className="bg-white p-2 rounded border border-primary-100 shrink-0 text-primary-600">
                   <LinkIcon size={16}/>
                </div>
                <div className="overflow-hidden">
-                  <h4 className="text-sm font-bold text-indigo-900 truncate">{discussContext?.title}</h4>
-                  <p className="text-xs text-indigo-700 truncate">{discussContext?.subtitle}</p>
-                  <span className="text-[10px] uppercase font-bold text-indigo-400 mt-1 block">{discussContext?.type}</span>
+                  <h4 className="text-sm font-bold text-primary-900 truncate">{discussContext?.title}</h4>
+                  <p className="text-xs text-primary-700 truncate">{discussContext?.subtitle}</p>
+                  <span className="text-[10px] uppercase font-bold text-primary-400 mt-1 block">{discussContext?.type}</span>
                </div>
             </div>
 
@@ -124,7 +124,7 @@ export const TeamChatProvider = ({ children }: { children?: ReactNode }) => {
 
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                <Button variant="ghost" onClick={() => setIsDiscussOpen(false)}>Cancel</Button>
-               <Button onClick={handleDiscussSubmit} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+               <Button onClick={handleDiscussSubmit} className="gap-2 bg-primary-600 hover:bg-primary-700">
                   <Send size={14}/> Post to Chat
                </Button>
             </div>

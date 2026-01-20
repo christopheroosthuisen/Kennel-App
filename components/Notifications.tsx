@@ -150,7 +150,7 @@ export const Notifications = () => {
                   className={cn(
                     "p-4 cursor-pointer hover:bg-slate-100 transition-colors relative group",
                     selectedId === notification.id ? "bg-white border-l-4 border-l-primary-500 shadow-sm z-10" : "bg-transparent border-l-4 border-l-transparent",
-                    !notification.read && "bg-blue-50/30"
+                    !notification.read && "bg-primary-50/30"
                   )}
                 >
                   <div className="flex justify-between items-start mb-1">
@@ -248,7 +248,7 @@ export const Notifications = () => {
                   ) : (
                     selectedNotification.comments.map(comment => (
                       <div key={comment.id} className="flex gap-3 group">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold shrink-0">
                           {comment.userName.charAt(0)}
                         </div>
                         <div className="flex-1">

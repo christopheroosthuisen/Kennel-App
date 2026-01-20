@@ -185,7 +185,7 @@ export const EstimateModal = ({ reservationId, isOpen, onClose }: EstimateModalP
            <div className="flex gap-2">
               {!isEditing ? (
                  <>
-                    <Button variant="ghost" className="gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100" onClick={handleRequestApproval}>
+                    <Button variant="ghost" className="gap-2 text-primary-600 bg-primary-50 hover:bg-primary-100" onClick={handleRequestApproval}>
                         <MessageCircle size={14}/> Ask Team
                     </Button>
                     <div className="w-px h-8 bg-slate-200 mx-1"></div>
@@ -354,53 +354,39 @@ export const EstimateModal = ({ reservationId, isOpen, onClose }: EstimateModalP
               <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
                  {!showPaymentInput ? (
                     <Button 
-                       className="w-full h-12 text-lg gap-2 shadow-md bg-green-600 hover:bg-green-700 border-none" 
+                       className="w-full h-12 text-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-all active:scale-95"
                        onClick={() => setShowPaymentInput(true)}
                        disabled={balanceDue <= 0}
                     >
-                       <CreditCard size={20}/> Take Payment
+                       <CreditCard size={20} className="mr-2"/>
+                       {balanceDue <= 0 ? 'Paid in Full' : 'Take Payment'}
                     </Button>
                  ) : (
-                    <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                       <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-bold text-slate-800">New Payment</h4>
-                          <button onClick={() => setShowPaymentInput(false)}><X size={16} className="text-slate-400 hover:text-slate-600"/></button>
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                       <Label>Payment Amount</Label>
+                       <div className="relative">
+                          <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                          <Input 
+                             value={paymentAmount} 
+                             onChange={(e) => setPaymentAmount(e.target.value)} 
+                             className="pl-9 font-bold text-lg" 
+                             placeholder={balanceDue.toFixed(2)}
+                             autoFocus
+                          />
                        </div>
                        
-                       <div>
-                          <Label>Amount</Label>
-                          <div className="relative">
-                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
-                             <Input 
-                                type="number" 
-                                autoFocus
-                                className="pl-8 font-bold text-lg" 
-                                value={paymentAmount}
-                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                placeholder={balanceDue.toFixed(2)}
-                             />
-                          </div>
-                       </div>
-                       
-                       <div>
-                          <Label>Method</Label>
-                          <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                             <option>Credit Card</option>
-                             <option>Cash</option>
-                             <option>Check</option>
-                             <option>Store Credit</option>
-                          </Select>
-                       </div>
+                       <Label>Method</Label>
+                       <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                          <option>Credit Card</option>
+                          <option>Cash</option>
+                          <option>Check</option>
+                          <option>Store Credit</option>
+                       </Select>
 
-                       <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleApplyPayment}>
-                          Process Payment
-                       </Button>
-                    </div>
-                 )}
-                 
-                 {balanceDue <= 0 && (
-                    <div className="mt-4 flex items-center justify-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg text-sm font-bold border border-green-100">
-                       <CheckCircle size={16}/> Paid in Full
+                       <div className="flex gap-2 pt-2">
+                          <Button variant="ghost" className="flex-1" onClick={() => setShowPaymentInput(false)}>Cancel</Button>
+                          <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={handleApplyPayment}>Charge</Button>
+                       </div>
                     </div>
                  )}
               </div>

@@ -19,7 +19,7 @@ import {
   MOCK_PACKAGES, MOCK_MEMBERSHIPS, MOCK_VET_CLINICS, MOCK_VETERINARIANS,
   MOCK_OWNERS, MOCK_PETS
 } from '../constants';
-import { ServiceType, Package, Membership, Role, Permission, PricingRule, TaxRate, FormTemplate, InvoiceSettings, ServiceQuota, PortalSettings } from '../types';
+import { ServiceType, Package, Membership, Role, Permission, PricingRule, TaxRate, FormTemplate, InvoiceSettings, ServiceQuota, PortalSettings, FormField } from '../types';
 import { useTheme } from './ThemeContext';
 import { useSystem } from './SystemContext';
 
@@ -301,7 +301,7 @@ const BrandingView = () => {
                 </div>
              </Card>
 
-             {/* Colors */}
+             {/* Brand Colors */}
              <Card className="p-5 space-y-4">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2"><Sparkles size={16}/> Brand Colors</h3>
                 
@@ -341,6 +341,38 @@ const BrandingView = () => {
                       </div>
                       <p className="text-xs text-slate-500 mt-1">Navigation sidebar background.</p>
                    </div>
+                </div>
+             </Card>
+
+             {/* Semantic Colors - NEW */}
+             <Card className="p-5 space-y-4">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2"><Palette size={16}/> Semantic Colors</h3>
+                <p className="text-xs text-slate-500">Customize status indicators and alerts.</p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                   {[
+                      { label: 'Success (Green)', key: 'successColor' as const },
+                      { label: 'Warning (Amber)', key: 'warningColor' as const },
+                      { label: 'Danger (Red)', key: 'dangerColor' as const },
+                      { label: 'Info (Blue)', key: 'infoColor' as const },
+                   ].map(color => (
+                      <div key={color.key}>
+                         <Label className="text-xs">{color.label}</Label>
+                         <div className="flex items-center gap-2 mt-1">
+                            <input 
+                              type="color" 
+                              value={theme[color.key]} 
+                              onChange={(e) => updateTheme({ [color.key]: e.target.value })}
+                              className="h-8 w-12 p-1 rounded cursor-pointer border border-slate-300"
+                            />
+                            <Input 
+                              value={theme[color.key]} 
+                              onChange={(e) => updateTheme({ [color.key]: e.target.value })}
+                              className="h-8 text-xs font-mono"
+                           />
+                         </div>
+                      </div>
+                   ))}
                 </div>
              </Card>
 
@@ -430,6 +462,13 @@ const BrandingView = () => {
                                <div className="text-2xl font-bold text-slate-900">1,234</div>
                             </Card>
                          ))}
+                      </div>
+
+                      <div className="flex gap-2 mb-6">
+                         <Badge variant="success">Success</Badge>
+                         <Badge variant="warning">Warning</Badge>
+                         <Badge variant="danger">Error</Badge>
+                         <Badge variant="info">Info</Badge>
                       </div>
 
                       <Card className="p-0 overflow-hidden">

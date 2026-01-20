@@ -1,12 +1,15 @@
 
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // --- Types ---
 
 export interface ThemeSettings {
-  primaryColor: string; // The core brand color
+  primaryColor: string; // Brand color
   secondaryColor: string; // Sidebar/Dark backgrounds
+  successColor: string; // Green
+  warningColor: string; // Amber
+  dangerColor: string; // Red
+  infoColor: string; // Blue
   fontFamily: string;
   borderRadius: string; // '0px' | '4px' | '8px' | '12px'
 }
@@ -23,16 +26,20 @@ interface ThemeContextType {
 const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#0ea5e9', // Sky 500
   secondaryColor: '#0f172a', // Slate 900
+  successColor: '#22c55e', // Green 500
+  warningColor: '#f59e0b', // Amber 500
+  dangerColor: '#ef4444', // Red 500
+  infoColor: '#3b82f6', // Blue 500
   fontFamily: 'Inter',
   borderRadius: '0.5rem', // 8px
 };
 
 const PRESETS: ThemeSettings[] = [
-  { primaryColor: '#0ea5e9', secondaryColor: '#0f172a', fontFamily: 'Inter', borderRadius: '0.5rem' }, // Default (Tech Blue)
-  { primaryColor: '#7c3aed', secondaryColor: '#2e1065', fontFamily: 'Inter', borderRadius: '0.75rem' }, // Royal Purple
-  { primaryColor: '#10b981', secondaryColor: '#064e3b', fontFamily: 'Roboto', borderRadius: '0.25rem' }, // Nature Green
-  { primaryColor: '#f43f5e', secondaryColor: '#881337', fontFamily: 'Lato', borderRadius: '1rem' }, // Vibrant Rose
-  { primaryColor: '#f59e0b', secondaryColor: '#451a03', fontFamily: 'Inter', borderRadius: '0px' }, // Industrial Orange
+  { ...DEFAULT_THEME, primaryColor: '#0ea5e9', secondaryColor: '#0f172a' }, // Tech Blue (Default)
+  { ...DEFAULT_THEME, primaryColor: '#7c3aed', secondaryColor: '#2e1065', borderRadius: '0.75rem' }, // Royal Purple
+  { ...DEFAULT_THEME, primaryColor: '#10b981', secondaryColor: '#064e3b', successColor: '#059669', fontFamily: 'Roboto', borderRadius: '0.25rem' }, // Nature Green
+  { ...DEFAULT_THEME, primaryColor: '#f43f5e', secondaryColor: '#881337', dangerColor: '#be123c', fontFamily: 'Lato', borderRadius: '1rem' }, // Vibrant Rose
+  { ...DEFAULT_THEME, primaryColor: '#f59e0b', secondaryColor: '#451a03', warningColor: '#d97706', fontFamily: 'Inter', borderRadius: '0px' }, // Industrial Orange
 ];
 
 // --- Helper Functions for Color Manipulation ---
@@ -57,6 +64,20 @@ const adjustColor = (hex: string, percent: number) => {
     return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
 };
 
+// Helper to set a full palette (50-900) for a given color name
+const setPalette = (root: HTMLElement, name: string, baseColor: string) => {
+  root.style.setProperty(`--color-${name}-50`, adjustColor(baseColor, 180));
+  root.style.setProperty(`--color-${name}-100`, adjustColor(baseColor, 150));
+  root.style.setProperty(`--color-${name}-200`, adjustColor(baseColor, 100));
+  root.style.setProperty(`--color-${name}-300`, adjustColor(baseColor, 50));
+  root.style.setProperty(`--color-${name}-400`, adjustColor(baseColor, 20));
+  root.style.setProperty(`--color-${name}-500`, baseColor);
+  root.style.setProperty(`--color-${name}-600`, adjustColor(baseColor, -20));
+  root.style.setProperty(`--color-${name}-700`, adjustColor(baseColor, -40));
+  root.style.setProperty(`--color-${name}-800`, adjustColor(baseColor, -60));
+  root.style.setProperty(`--color-${name}-900`, adjustColor(baseColor, -80));
+};
+
 // Apply CSS Variables to Root
 const applyThemeToDom = (theme: ThemeSettings) => {
   const root = document.documentElement;
@@ -67,25 +88,17 @@ const applyThemeToDom = (theme: ThemeSettings) => {
   // 2. Border Radius
   root.style.setProperty('--radius', theme.borderRadius);
 
-  // 3. Primary Color Shades (Generating a palette from one color)
-  // We approximate Tailwind shades: 50 (lightest) -> 900 (darkest)
-  // Assuming input is roughly the 500 or 600 shade
-  root.style.setProperty('--color-primary-50', adjustColor(theme.primaryColor, 180));
-  root.style.setProperty('--color-primary-100', adjustColor(theme.primaryColor, 150));
-  root.style.setProperty('--color-primary-200', adjustColor(theme.primaryColor, 100));
-  root.style.setProperty('--color-primary-300', adjustColor(theme.primaryColor, 50));
-  root.style.setProperty('--color-primary-400', adjustColor(theme.primaryColor, 20));
-  root.style.setProperty('--color-primary-500', theme.primaryColor); // Base
-  root.style.setProperty('--color-primary-600', adjustColor(theme.primaryColor, -20));
-  root.style.setProperty('--color-primary-700', adjustColor(theme.primaryColor, -40));
-  root.style.setProperty('--color-primary-800', adjustColor(theme.primaryColor, -60));
-  root.style.setProperty('--color-primary-900', adjustColor(theme.primaryColor, -80));
+  // 3. Generate Palettes
+  setPalette(root, 'primary', theme.primaryColor);
+  setPalette(root, 'success', theme.successColor);
+  setPalette(root, 'danger', theme.dangerColor);
+  setPalette(root, 'warning', theme.warningColor);
+  setPalette(root, 'info', theme.infoColor);
 
-  // 4. Secondary Color (Sidebar / Dark backgrounds)
-  // We handle this simpler, mostly just the base and a lighter version
+  // 4. Secondary / Sidebar (Custom logic for dark mode backgrounds)
   root.style.setProperty('--color-secondary-950', theme.secondaryColor);
   root.style.setProperty('--color-secondary-900', adjustColor(theme.secondaryColor, 10));
-  root.style.setProperty('--color-secondary-800', adjustColor(theme.secondaryColor, 20));
+  root.style.setProperty('--color-secondary-850', adjustColor(theme.secondaryColor, 20));
 };
 
 // --- Context ---

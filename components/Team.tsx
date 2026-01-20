@@ -342,7 +342,7 @@ const TaskBoard = () => {
                               <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                  <div className="flex -space-x-2">
                                     {task.assigneeId ? (
-                                       <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold border border-white" title={MOCK_USERS.find(u=>u.id===task.assigneeId)?.name}>
+                                       <div className="h-6 w-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold border border-white" title={MOCK_USERS.find(u=>u.id===task.assigneeId)?.name}>
                                           {MOCK_USERS.find(u=>u.id===task.assigneeId)?.name.charAt(0)}
                                        </div>
                                     ) : (

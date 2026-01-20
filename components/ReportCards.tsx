@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { 
   Camera, Send, Smile, Frown, Meh, Utensils, CheckCircle, FileText, Plus, 
@@ -8,8 +7,8 @@ import {
   MoreHorizontal, PlayCircle, Image as ImageIcon, Trash2, MessageCircle
 } from 'lucide-react';
 import { Card, Button, Badge, Input, cn, Modal, Label, Select, Textarea, Tabs, Switch, BulkActionBar } from './Common';
-import { MOCK_REPORT_CARDS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_SERVICE_CONFIGS } from '../constants';
-import { ReportCard, ReservationStatus, ServiceType } from '../types';
+import { ReportCard } from '../types';
+import { useData } from './DataContext';
 
 // --- Configuration & Types ---
 
@@ -39,60 +38,29 @@ const MOODS = [
   { id: 'Affectionate', icon: '<3', color: 'text-red-500' }, // Using string for simple icon replacement
 ];
 
-// --- Mock Data Extension ---
-// Generate mock Pupdates for all checked-in dogs
-const generatePupdates = (): ReportCard[] => {
-  return MOCK_RESERVATIONS
-    .filter(r => r.status === ReservationStatus.CheckedIn || r.status === ReservationStatus.CheckedOut)
-    .map(r => {
-      // Find existing or create new
-      const existing = MOCK_REPORT_CARDS.find(rc => rc.reservationId === r.id);
-      if (existing) return existing;
-      
-      return {
-        id: `rc-${r.id}`,
-        reservationId: r.id,
-        petId: r.petId,
-        date: new Date().toISOString().split('T')[0],
-        status: 'To Do',
-        mood: [],
-        activities: [],
-        behaviorsWorkedOn: [],
-        eating: 'All',
-        potty: ['Pee', 'Poop'],
-        notes: '',
-        staffId: 's1',
-        media: [],
-        servicesCompleted: r.services // Link services from reservation
-      };
-    });
-};
-
-const ALL_PUPDATES = generatePupdates();
-
 // --- Components ---
 
 export const ReportCards = () => {
-  const [pupdates, setPupdates] = useState<ReportCard[]>(ALL_PUPDATES);
+  const { reportCards, pets, reservations, updateReportCard } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<'To Do' | 'Draft' | 'Sent'>('To Do');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const selectedPupdate = pupdates.find(p => p.id === selectedId);
-  const filteredList = pupdates.filter(p => {
-    const pet = MOCK_PETS.find(pet => pet.id === p.petId);
+  const selectedPupdate = reportCards.find(p => p.id === selectedId);
+  const filteredList = reportCards.filter(p => {
+    const pet = pets.find(pet => pet.id === p.petId);
     const matchesSearch = pet?.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = p.status === filter;
     return matchesSearch && matchesFilter;
   });
 
   const handleUpdate = (id: string, updates: Partial<ReportCard>) => {
-    setPupdates(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    updateReportCard(id, updates);
   };
 
   const handleBulkUpdate = (updates: Partial<ReportCard>) => {
-    setPupdates(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, ...updates, status: 'Draft' } : p));
+    selectedIds.forEach(id => updateReportCard(id, { ...updates, status: 'Draft' }));
     setSelectedIds([]);
   };
 
@@ -119,7 +87,7 @@ export const ReportCards = () => {
                   filter === s ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
               >
-                {s} ({pupdates.filter(p => p.status === s).length})
+                {s} ({reportCards.filter(p => p.status === s).length})
               </button>
             ))}
           </div>
@@ -137,7 +105,7 @@ export const ReportCards = () => {
 
         <div className="flex-1 overflow-y-auto">
           {filteredList.map(card => {
-            const pet = MOCK_PETS.find(p => p.id === card.petId);
+            const pet = pets.find(p => p.id === card.petId);
             return (
               <div 
                 key={card.id} 
@@ -147,7 +115,7 @@ export const ReportCards = () => {
                 className={cn(
                   "p-3 border-b border-slate-100 cursor-pointer hover:bg-slate-100 transition-all group relative",
                   selectedId === card.id ? "bg-white border-l-4 border-l-primary-500 shadow-sm z-10" : "bg-transparent border-l-4 border-l-transparent",
-                  selectedIds.includes(card.id) ? "bg-blue-50/50" : ""
+                  selectedIds.includes(card.id) ? "bg-primary-50/50" : ""
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -191,6 +159,8 @@ export const ReportCards = () => {
             <PupdateEditor 
                pupdate={selectedPupdate} 
                onChange={(updates) => handleUpdate(selectedPupdate.id, updates)}
+               pets={pets}
+               reservations={reservations}
             />
          ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
@@ -208,9 +178,9 @@ export const ReportCards = () => {
 
 // --- Single Editor Component ---
 
-const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (u: Partial<ReportCard>) => void }) => {
-  const pet = MOCK_PETS.find(p => p.id === pupdate.petId);
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === pupdate.reservationId);
+const PupdateEditor = ({ pupdate, onChange, pets, reservations }: { pupdate: ReportCard, onChange: (u: Partial<ReportCard>) => void, pets: any[], reservations: any[] }) => {
+  const pet = pets.find(p => p.id === pupdate.petId);
+  const reservation = reservations.find(r => r.id === pupdate.reservationId);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Mock AI Generation
@@ -221,9 +191,6 @@ const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (
       const moods = pupdate.mood.join(', ');
       const services = pupdate.servicesCompleted?.join(' and ') || '';
       
-      const prompt = `Write a cute update from ${pet?.name}'s perspective. They did ${activities}, felt ${moods}, and had ${services}.`;
-      
-      // Simulating AI response based on inputs
       const intros = ["Guess what!", "Best day ever!", "Hi family!", "Tail wags!"];
       const activityText = pupdate.activities.includes('Pool Party') ? "I made a huge splash in the pool!" : "I ran so fast with my friends.";
       const serviceText = services ? `I also got some pampering with ${services}.` : "";
@@ -267,7 +234,7 @@ const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (
                 <option>Draft</option>
                 <option>Sent</option>
              </Select>
-             <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 h-9"><Send size={14}/> Send Pupdate</Button>
+             <Button className="gap-2 bg-primary-600 hover:bg-primary-700 h-9"><Send size={14}/> Send Pupdate</Button>
           </div>
        </div>
 
@@ -357,8 +324,8 @@ const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (
                    <div className="mt-3 pt-3 border-t border-slate-100">
                       <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Plan Recommendation: {pet.activeProgram}</div>
                       <div className="flex gap-2">
-                         <Badge variant="outline" className="border-dashed border-indigo-300 text-indigo-600 bg-indigo-50 cursor-pointer">+ Add "Leash Manners"</Badge>
-                         <Badge variant="outline" className="border-dashed border-indigo-300 text-indigo-600 bg-indigo-50 cursor-pointer">+ Add "Sit Stay"</Badge>
+                         <Badge variant="outline" className="border-dashed border-primary-300 text-primary-600 bg-primary-50 cursor-pointer">+ Add "Leash Manners"</Badge>
+                         <Badge variant="outline" className="border-dashed border-primary-300 text-primary-600 bg-primary-50 cursor-pointer">+ Add "Sit Stay"</Badge>
                       </div>
                    </div>
                 )}
@@ -439,7 +406,7 @@ const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (
           <section>
              <div className="flex justify-between items-center mb-3">
                 <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                   <MessageCircle size={16} className="text-indigo-500"/> Pupdate Narrative
+                   <MessageCircle size={16} className="text-primary-500"/> Pupdate Narrative
                 </h3>
                 {/* Service Chips */}
                 {pupdate.servicesCompleted && pupdate.servicesCompleted.length > 0 && (
@@ -467,8 +434,7 @@ const PupdateEditor = ({ pupdate, onChange }: { pupdate: ReportCard, onChange: (
                      onClick={generateNarrative}
                      disabled={isGenerating}
                      className={cn("gap-2 shadow-lg transition-all", isGenerating ? "w-32" : "w-auto")}
-                     variant="secondary" // Use secondary to stand out against white bg
-                     style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', color: 'white', border: 'none' }}
+                     variant="primary" 
                    >
                       {isGenerating ? (
                          <>Generating...</>
@@ -558,7 +524,7 @@ const BulkEditor = ({ count, onCancel, onSave }: { count: number, onCancel: () =
                <Button variant="ghost" onClick={onCancel}>Cancel</Button>
                <Button 
                   onClick={() => onSave({ activities, mood })} 
-                  className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg"
+                  className="bg-primary-600 hover:bg-primary-700 gap-2 shadow-lg"
                >
                   <Wand2 size={16}/> Apply & Auto-Generate
                </Button>

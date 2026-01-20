@@ -10,8 +10,10 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn, Button, Input, Badge, Tabs, Card } from './Common';
-import { MOCK_NOTIFICATIONS, MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_CHANNELS, MOCK_AGENTS } from '../constants';
+import { MOCK_CHANNELS, MOCK_AGENTS } from '../constants';
 import { AiAgent } from '../types';
+import { useData } from './DataContext';
+import { useCommunication } from './Messaging';
 
 // --- Menu Configuration ---
 
@@ -37,7 +39,7 @@ const MENU_ITEMS: NavItemConfig[] = [
       { label: 'Facility Calendar', path: '/calendar', icon: CalendarRange },
       { label: 'Group Classes', path: '/classes', icon: GraduationCap },
       { label: 'Point of Sale', path: '/pos', icon: CreditCard },
-      { label: 'Pupdates', path: '/report-cards', icon: FileText }, // Renamed from Report Cards
+      { label: 'Pupdates', path: '/report-cards', icon: FileText }, 
     ]
   },
   { 
@@ -55,7 +57,7 @@ const MENU_ITEMS: NavItemConfig[] = [
     label: 'Team & Staff', 
     icon: Briefcase, 
     children: [
-      { label: 'Team Chat', path: '/team/chat', icon: MessageCircle, badge: 3 }, // Mock unread count
+      { label: 'Team Chat', path: '/team/chat', icon: MessageCircle, badge: 3 },
       { label: 'Schedule & Tasks', path: '/team', icon: CalendarRange },
       { label: 'Time Clock', path: '/team?tab=clock', icon: Clock },
     ]
@@ -72,7 +74,6 @@ const MENU_ITEMS: NavItemConfig[] = [
   },
 ];
 
-// ... (Rest of NavLink and NavGroup - unchanged from previous version) ...
 const NavLink = ({ icon: Icon, label, path, collapsed, active, badge }: { icon: any, label: string, path: string, collapsed: boolean, active: boolean, badge?: number }) => (
   <Link 
     to={path}
@@ -95,7 +96,6 @@ const NavLink = ({ icon: Icon, label, path, collapsed, active, badge }: { icon: 
        </div>
     )}
     
-    {/* Collapsed Tooltip (Simple CSS based) */}
     {collapsed && (
       <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
         {label}
@@ -214,13 +214,20 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
   const [searchTerm, setSearchTerm] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Data Context Hooks
+  const { owners, pets, reservations, notifications } = useData();
+  const { openCompose } = useCommunication();
 
   // AI Panel State
   const [aiTab, setAiTab] = useState('chat');
   const [runningAgent, setRunningAgent] = useState<string | null>(null);
   const [agentLogs, setAgentLogs] = useState<string[]>([]);
   const [agentResult, setAgentResult] = useState<React.ReactNode | null>(null);
+  const [aiInput, setAiInput] = useState('');
+  const [aiMessages, setAiMessages] = useState<{role: 'user' | 'ai', text: string}[]>([]);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Quick Nav Hotkey
   useEffect(() => {
@@ -237,27 +244,74 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Auto-scroll logs
+  // Auto-scroll logs & chat
   useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [agentLogs]);
+    if (logContainerRef.current) logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, [agentLogs, aiMessages]);
 
-  // Run Agent Simulation
+  // --- AI Logic ---
+  const processAiCommand = (input: string) => {
+    const lower = input.toLowerCase();
+    setAiMessages(prev => [...prev, { role: 'user', text: input }]);
+    setAiInput('');
+
+    setTimeout(() => {
+      // 1. Navigation
+      if (lower.includes('go to') || lower.includes('open') || lower.includes('view')) {
+        let response = "Navigating...";
+        if (lower.includes('reservation')) { navigate('/reservations'); response = "Opening Reservations."; }
+        else if (lower.includes('dashboard')) { navigate('/'); response = "Going to Dashboard."; }
+        else if (lower.includes('calendar')) { navigate('/calendar'); response = "Opening Calendar."; }
+        else if (lower.includes('setting') || lower.includes('admin')) { navigate('/admin'); response = "Opening Admin Settings."; }
+        else if (lower.includes('message')) { navigate('/messages'); response = "Opening Messages."; }
+        setAiMessages(prev => [...prev, { role: 'ai', text: response }]);
+        return;
+      }
+
+      // 2. Data Lookup
+      if (lower.includes('search') || lower.includes('find') || lower.includes('where')) {
+        const nameMatch = input.match(/(?:search|find|where is) (.+)/i);
+        const name = nameMatch ? nameMatch[1].trim() : '';
+        
+        if (name) {
+          const foundPet = pets.find(p => p.name.toLowerCase().includes(name.toLowerCase()));
+          const foundOwner = owners.find(o => o.name.toLowerCase().includes(name.toLowerCase()));
+          
+          if (foundPet) {
+             navigate(`/owners-pets?id=${foundPet.id}&type=pets`);
+             setAiMessages(prev => [...prev, { role: 'ai', text: `Found pet ${foundPet.name}. Opening profile.` }]);
+          } else if (foundOwner) {
+             navigate(`/owners-pets?id=${foundOwner.id}&type=owners`);
+             setAiMessages(prev => [...prev, { role: 'ai', text: `Found owner ${foundOwner.name}. Opening profile.` }]);
+          } else {
+             setAiMessages(prev => [...prev, { role: 'ai', text: `I couldn't find "${name}" in the database.` }]);
+          }
+        } else {
+           setAiMessages(prev => [...prev, { role: 'ai', text: "Who are you looking for?" }]);
+        }
+        return;
+      }
+
+      // 3. Draft Message
+      if (lower.includes('draft') || lower.includes('email') || lower.includes('text')) {
+         openCompose();
+         setAiMessages(prev => [...prev, { role: 'ai', text: "I've opened the message composer for you." }]);
+         return;
+      }
+
+      // Default
+      setAiMessages(prev => [...prev, { role: 'ai', text: "I can help you navigate, find records, or draft messages. Try 'Go to reservations' or 'Find Rex'." }]);
+    }, 600);
+  };
+
+  // Run Agent Simulation (Visual only for now, but integrated)
   const runAgent = (agent: AiAgent) => {
     setRunningAgent(agent.id);
     setAgentLogs([`Initializing ${agent.name}...`]);
     setAgentResult(null);
 
-    const steps = [
-      "Accessing database...",
-      "Scanning records...",
-      "Analyzing patterns...",
-      "Drafting actions...",
-      "Finalizing results..."
-    ];
-
+    const steps = ["Scanning database...", "Analyzing records...", "Processing rules...", "Finalizing output..."];
     let stepIndex = 0;
     const interval = setInterval(() => {
       if (stepIndex < steps.length) {
@@ -268,28 +322,19 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
         setRunningAgent(null);
         setAgentLogs(prev => [...prev, `> Task Complete.`]);
         
-        // Mock Results based on Agent ID
         if (agent.id === 'vac-agent') {
            setAgentResult(
               <div className="space-y-3">
-                 <div className="bg-amber-50 p-3 rounded border border-amber-100 text-xs">Found <strong>3 pets</strong> with expired vaccines in the next 7 days.</div>
+                 <div className="bg-amber-50 p-3 rounded border border-amber-100 text-xs">Found <strong>3 pets</strong> with expired vaccines.</div>
                  <div className="flex gap-2">
-                    <Button size="sm" className="w-full text-xs">Review List</Button>
-                    <Button size="sm" variant="outline" className="w-full text-xs">Send Emails</Button>
+                    <Button size="sm" className="w-full text-xs" onClick={() => navigate('/reports?reportId=ani_vax')}>View Report</Button>
                  </div>
-              </div>
-           );
-        } else if (agent.id === 'churn-agent') {
-           setAgentResult(
-              <div className="space-y-3">
-                 <div className="bg-blue-50 p-3 rounded border border-blue-100 text-xs">Identified <strong>12 clients</strong> absent for >90 days.</div>
-                 <Button size="sm" className="w-full text-xs">Draft Re-engagement Blast</Button>
               </div>
            );
         } else {
            setAgentResult(
               <div className="p-3 bg-green-50 text-green-700 text-xs rounded border border-green-200">
-                 Action completed successfully. Report generated.
+                 Action completed successfully.
               </div>
            );
         }
@@ -297,7 +342,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     }, 800);
   };
 
-  // Filter Logic for Quick Nav (Same as before)
+  // Filter Logic for Quick Nav
   const searchResults = useMemo(() => {
     if (!searchTerm) return null;
     const term = searchTerm.toLowerCase();
@@ -305,16 +350,16 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
       const items = item.type === 'group' ? item.children || [] : [item];
       return items.filter(i => i.label.toLowerCase().includes(term));
     });
-    const owners = MOCK_OWNERS.filter(o => o.name.toLowerCase().includes(term) || o.email.includes(term));
-    const pets = MOCK_PETS.filter(p => p.name.toLowerCase().includes(term));
-    const reservations = MOCK_RESERVATIONS.filter(r => {
-      const pet = MOCK_PETS.find(p => p?.id === r.petId);
-      const owner = MOCK_OWNERS.find(o => o?.id === r.ownerId);
+    const foundOwners = owners.filter(o => o.name.toLowerCase().includes(term) || o.email.includes(term));
+    const foundPets = pets.filter(p => p.name.toLowerCase().includes(term));
+    const foundRes = reservations.filter(r => {
+      const pet = pets.find(p => p?.id === r.petId);
+      const owner = owners.find(o => o?.id === r.ownerId);
       return (r.id.toLowerCase().includes(term) || pet?.name.toLowerCase().includes(term) || owner?.name.toLowerCase().includes(term));
     });
     const channels = MOCK_CHANNELS.filter(c => c.name.toLowerCase().includes(term));
-    return { pages, owners, pets, reservations, channels };
-  }, [searchTerm]);
+    return { pages, owners: foundOwners, pets: foundPets, reservations: foundRes, channels };
+  }, [searchTerm, owners, pets, reservations]);
 
   const handleResultClick = (path: string) => {
     navigate(path);
@@ -322,7 +367,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
     setSearchTerm('');
   };
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="flex h-screen w-full bg-slate-50">
@@ -331,7 +376,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
         "bg-slate-950 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-900 z-20 shadow-2xl",
         collapsed ? "w-16" : "w-64"
       )}>
-        {/* Logo Area */}
         <div className="h-16 flex items-center px-4 border-b border-slate-800/50 bg-slate-950">
             <div className="flex items-center gap-3 text-white font-bold text-xl overflow-hidden w-full">
              <div className="h-8 w-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-primary-900/20">
@@ -346,7 +390,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
             </div>
         </div>
 
-        {/* Navigation Items */}
         <div className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           {MENU_ITEMS.map((item) => (
             <React.Fragment key={item.label}>
@@ -363,14 +406,13 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                 <NavGroup 
                   item={item} 
                   collapsed={collapsed} 
-                  currentPath={location.pathname + location.search} // Include search for exact matching
+                  currentPath={location.pathname + location.search} 
                 />
               )}
             </React.Fragment>
           ))}
         </div>
 
-        {/* Sidebar Footer */}
         <div className="p-3 border-t border-slate-800/50 bg-slate-900/50">
            <button 
              onClick={() => setCollapsed(!collapsed)}
@@ -383,12 +425,10 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Header */}
         <header 
           className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10"
           onDoubleClick={() => setQuickNavOpen(true)}
         >
-           {/* Left: Location & Search */}
            <div className="flex items-center gap-6 flex-1">
              <div className="flex flex-col">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</span>
@@ -409,20 +449,16 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
              </div>
            </div>
 
-           {/* Right: Actions */}
            <div className="flex items-center gap-2">
              <Button variant="ghost" size="icon" title="Help"><HelpCircle size={20} /></Button>
              
-             {/* Cart Button */}
              <Button 
                 variant="ghost" size="icon" title="POS Cart" className="relative"
                 onClick={() => navigate('/pos')}
              >
                 <ShoppingCart size={20} />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
              </Button>
 
-             {/* Notification Button */}
              <Button 
                 variant="ghost" size="icon" title="Notifications" className="relative"
                 onClick={() => navigate('/notifications')}
@@ -441,10 +477,10 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                 onClick={toggleAI}
                 className={cn(
                   "gap-2 border transition-all",
-                  showAI ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm" : "bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/50"
+                  showAI ? "bg-primary-50 border-primary-200 text-primary-700 shadow-sm" : "bg-white border-slate-200 text-slate-700 hover:border-primary-300 hover:bg-primary-50/50"
                 )}
              >
-               <Sparkles size={16} className={showAI ? "fill-indigo-300 text-indigo-600" : "text-slate-400"} />
+               <Sparkles size={16} className={showAI ? "fill-primary-300 text-primary-600" : "text-slate-400"} />
                <span className="hidden sm:inline font-medium">AI Ops</span>
              </Button>
 
@@ -456,7 +492,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
            </div>
         </header>
 
-        {/* Main Scrollable Area */}
         <main className="flex-1 overflow-auto bg-slate-50 relative scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
           <div className="min-h-full p-6">
             {children}
@@ -464,14 +499,14 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
         </main>
       </div>
 
-      {/* AI Operations Center (Right Side) */}
+      {/* AI Operations Center */}
       <div className={cn(
         "fixed inset-y-0 right-0 w-[450px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-30 border-l border-slate-200 flex flex-col",
         showAI ? "translate-x-0" : "translate-x-full"
       )}>
-        <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-indigo-50/50">
-          <div className="flex items-center gap-2 text-indigo-900 font-semibold">
-            <Bot size={20} className="text-indigo-600 fill-indigo-200" />
+        <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-primary-50/50">
+          <div className="flex items-center gap-2 text-primary-900 font-semibold">
+            <Bot size={20} className="text-primary-600 fill-primary-200" />
             <span>Operations Command</span>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleAI}><X size={18} /></Button>
@@ -487,44 +522,39 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
         
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
            {aiTab === 'chat' ? (
-              <>
-                 {/* Quick Prompts */}
-                 <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Smart Suggestions</h3>
-                    <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg space-y-3">
-                       <div className="flex gap-3">
-                         <div className="mt-1 h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                           <Calendar size={14} />
-                         </div>
-                         <div>
-                           <p className="text-sm font-medium text-indigo-900">Capacity Warning</p>
-                           <p className="text-xs text-indigo-700 mt-1">
-                             Boarding capacity for next weekend (Nov 3-5) is at 95%. Consider enabling "Waitlist Only".
-                           </p>
-                           <div className="mt-3 flex gap-2">
-                             <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs h-8">Enable Waitlist</Button>
-                             <Button size="sm" variant="ghost" className="text-indigo-600 hover:bg-indigo-100 text-xs h-8">Dismiss</Button>
-                           </div>
-                         </div>
+              <div className="flex flex-col h-full">
+                 <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+                    {aiMessages.length === 0 && (
+                       <div className="text-center text-slate-400 mt-10 text-sm">
+                          <Sparkles size={32} className="mx-auto mb-2 opacity-50"/>
+                          <p>Ask me to navigate, search records, or draft messages.</p>
                        </div>
-                    </div>
+                    )}
+                    {aiMessages.map((msg, i) => (
+                       <div key={i} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                          <div className={cn(
+                             "max-w-[85%] p-3 rounded-lg text-sm",
+                             msg.role === 'user' ? "bg-primary-600 text-white rounded-tr-none" : "bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-sm"
+                          )}>
+                             {msg.text}
+                          </div>
+                       </div>
+                    ))}
+                    <div ref={chatEndRef} />
                  </div>
-
-                 {/* Chat Interface Placeholder */}
-                 <div className="flex-1 flex flex-col justify-end gap-2 h-[400px]">
-                    <div className="flex gap-2">
-                       <Input placeholder="Ask to draft email, find pet, etc..." className="flex-1" />
-                       <Button size="icon"><ArrowRight size={18} /></Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                       <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Summarize today's issues</span>
-                       <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full cursor-pointer hover:bg-slate-200">Draft report card for Rex</span>
-                    </div>
+                 <div className="flex gap-2">
+                    <Input 
+                       value={aiInput} 
+                       onChange={(e) => setAiInput(e.target.value)} 
+                       onKeyDown={(e) => e.key === 'Enter' && processAiCommand(aiInput)}
+                       placeholder="How can I help?" 
+                       className="flex-1" 
+                    />
+                    <Button size="icon" onClick={() => processAiCommand(aiInput)}><ArrowRight size={18} /></Button>
                  </div>
-              </>
+              </div>
            ) : (
               <div className="space-y-4">
-                 {/* Agent Execution Terminal */}
                  {runningAgent && (
                     <div className="mb-6 bg-slate-900 text-green-400 rounded-lg p-4 font-mono text-xs shadow-lg border border-slate-700">
                        <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
@@ -537,7 +567,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                     </div>
                  )}
 
-                 {/* Agent Result Display */}
                  {agentResult && !runningAgent && (
                     <div className="mb-6 animate-in fade-in slide-in-from-top-4">
                        <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm relative overflow-hidden">
@@ -553,14 +582,13 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                     </div>
                  )}
 
-                 {/* Available Agents List */}
                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Available Agents</h3>
                  <div className="grid grid-cols-1 gap-3">
                     {MOCK_AGENTS?.map(agent => (
                        <Card key={agent?.id} className={cn("p-3 hover:border-primary-300 transition-all group", runningAgent === agent?.id ? "opacity-50 pointer-events-none" : "")}>
                           <div className="flex justify-between items-start">
                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                <div className="p-2 bg-primary-50 text-primary-600 rounded-lg group-hover:bg-primary-100 transition-colors">
                                    <agent.icon size={18}/>
                                 </div>
                                 <div>
@@ -571,7 +599,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                           </div>
                           <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
                              <span className="text-[10px] text-slate-400">Last run: {agent?.lastRun}</span>
-                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200" onClick={() => runAgent(agent)}>
+                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-200" onClick={() => runAgent(agent)}>
                                 <Play size={10}/> {agent?.actionButtonText}
                              </Button>
                           </div>
@@ -601,7 +629,6 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
              </div>
              
              <div className="p-2 max-h-[60vh] overflow-y-auto">
-                {/* Search Results Rendering (Same as before) */}
                 {searchResults ? (
                   <div className="space-y-4">
                     {/* Pages */}
@@ -685,7 +712,7 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                       <div>
                         <div className="px-3 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Reservations</div>
                         {searchResults.reservations.map(res => {
-                          const pet = MOCK_PETS.find(p => p?.id === res.petId);
+                          const pet = pets.find(p => p?.id === res.petId);
                           return (
                             <div 
                               key={res.id}

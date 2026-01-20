@@ -102,7 +102,7 @@ export const InternalChat = () => {
            <div className="px-3">
               <button 
                  onClick={() => triggerAiResponse("Help")}
-                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium text-indigo-300 hover:bg-indigo-900/30 transition-colors"
+                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium text-primary-300 hover:bg-slate-800 transition-colors"
               >
                  <Sparkles size={16}/> AI Copilot
               </button>
@@ -121,7 +121,7 @@ export const InternalChat = () => {
                        onClick={() => setActiveChannelId(c.id)}
                        className={cn(
                           "w-full flex items-center justify-between px-4 py-1.5 text-sm transition-colors",
-                          activeChannelId === c.id ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-400 hover:text-slate-100"
+                          activeChannelId === c.id ? "bg-primary-600 text-white" : "hover:bg-slate-800 text-slate-400 hover:text-slate-100"
                        )}
                     >
                        <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export const InternalChat = () => {
                        onClick={() => setActiveChannelId(c.id)}
                        className={cn(
                           "w-full flex items-center justify-between px-4 py-1.5 text-sm transition-colors",
-                          activeChannelId === c.id ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-400 hover:text-slate-100"
+                          activeChannelId === c.id ? "bg-primary-600 text-white" : "hover:bg-slate-800 text-slate-400 hover:text-slate-100"
                        )}
                     >
                        <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export const InternalChat = () => {
          <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
                {activeChannel?.type === 'dm' ? (
-                  <div className="h-8 w-8 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <div className="h-8 w-8 rounded-md bg-primary-100 text-primary-700 flex items-center justify-center font-bold">
                      {activeChannel.name.charAt(0)}
                   </div>
                ) : (
@@ -211,7 +211,7 @@ export const InternalChat = () => {
                      {/* Avatar */}
                      <div className={cn("w-10 flex-shrink-0 flex flex-col items-center", !showAvatar && "invisible")}>
                         {isAi ? (
-                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white shadow-md">
                               <Sparkles size={18}/>
                            </div>
                         ) : (
@@ -230,18 +230,18 @@ export const InternalChat = () => {
                         )}
                         <div className={cn(
                            "py-2 px-3 rounded-lg text-sm shadow-sm border relative group-hover:shadow-md transition-all",
-                           isMe ? "bg-blue-600 text-white border-blue-600 rounded-tr-none" : 
-                           isAi ? "bg-white border-indigo-100 ring-1 ring-indigo-50 text-slate-800 rounded-tl-none" :
+                           isMe ? "bg-primary-600 text-white border-primary-600 rounded-tr-none" : 
+                           isAi ? "bg-white border-primary-100 ring-1 ring-primary-50 text-slate-800 rounded-tl-none" :
                            "bg-white border-slate-200 text-slate-800 rounded-tl-none"
                         )}>
                            {msg.content}
-                           {isAi && <div className="mt-2 text-[10px] text-indigo-400 flex items-center gap-1 font-medium"><Sparkles size={10}/> AI Generated</div>}
+                           {isAi && <div className="mt-2 text-[10px] text-primary-400 flex items-center gap-1 font-medium"><Sparkles size={10}/> AI Generated</div>}
                         
                            {/* Context Attachment */}
                            {msg.context && (
                               <div className={cn(
                                  "mt-3 p-3 rounded border flex items-center gap-3 cursor-pointer transition-colors",
-                                 isMe ? "bg-blue-700 border-blue-500" : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                                 isMe ? "bg-primary-700 border-primary-500" : "bg-slate-50 border-slate-200 hover:bg-slate-100"
                               )} onClick={() => handleViewContext(msg.context!.type, msg.context!.id)}>
                                  <div className={cn("p-2 rounded bg-white/20 shrink-0", isMe ? "text-white" : "text-slate-500")}>
                                     <ArrowRight size={16}/>
@@ -272,10 +272,10 @@ export const InternalChat = () => {
             
             {isAiTyping && (
                <div className="flex gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-md">
                      <Sparkles size={18} className="animate-pulse"/>
                   </div>
-                  <div className="bg-white px-4 py-3 rounded-lg rounded-tl-none border border-indigo-100 text-xs text-indigo-400 flex items-center gap-1">
+                  <div className="bg-white px-4 py-3 rounded-lg rounded-tl-none border border-primary-100 text-xs text-primary-400 flex items-center gap-1">
                      Thinking...
                   </div>
                </div>
@@ -298,7 +298,7 @@ export const InternalChat = () => {
                   <div className="flex-1"></div>
                   <button 
                      onClick={() => setInputText(prev => prev + '@AI ')}
-                     className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded border border-indigo-100 hover:bg-indigo-100"
+                     className="flex items-center gap-1 px-2 py-1 bg-primary-50 text-primary-600 text-[10px] font-bold uppercase rounded border border-primary-100 hover:bg-primary-100"
                   >
                      <Sparkles size={10}/> Ask AI
                   </button>
@@ -319,7 +319,7 @@ export const InternalChat = () => {
                   />
                   <Button 
                      size="icon" 
-                     className={cn("h-8 w-8 mb-1 transition-all", inputText.trim() ? "bg-blue-600 hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed")}
+                     className={cn("h-8 w-8 mb-1 transition-all", inputText.trim() ? "bg-primary-600 hover:bg-primary-700" : "bg-slate-200 text-slate-400 cursor-not-allowed")}
                      onClick={handleSendMessage}
                      disabled={!inputText.trim()}
                   >
