@@ -3,17 +3,18 @@ import React, { useState, useMemo } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalIcon, Filter, Plus, 
   Clock, CheckCircle, LogIn, LogOut, Scissors, GraduationCap, MapPin, 
-  MoreHorizontal, Users
+  MoreHorizontal, Users, Map
 } from 'lucide-react';
 import { Card, Button, Select, Badge, cn, Modal, Label, Input, Textarea, Tabs } from './Common';
 import { EditReservationModal } from './EditModals';
 import { MOCK_CLASS_TYPES, MOCK_UNITS } from '../constants';
 import { ReservationStatus, ServiceType } from '../types';
 import { useData } from './DataContext';
+import { FacilityMap } from './FacilityMap';
 
 // --- Types for Calendar ---
 
-type ViewMode = 'facility' | 'lodging';
+type ViewMode = 'facility' | 'lodging' | 'map';
 
 interface CalendarEvent {
   id: string;
@@ -436,6 +437,12 @@ export const CalendarView = () => {
               >
                  Lodging Occupancy
               </button>
+              <button 
+                 onClick={() => setViewMode('map')}
+                 className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-all", viewMode === 'map' ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}
+              >
+                 Facility Map
+              </button>
            </div>
         </div>
 
@@ -460,10 +467,14 @@ export const CalendarView = () => {
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden">
-         {viewMode === 'facility' ? (
+         {viewMode === 'facility' && (
             <FacilityScheduleView currentDate={viewDate} setCurrentDate={setViewDate} />
-         ) : (
+         )}
+         {viewMode === 'lodging' && (
             <LodgingOccupancyView currentDate={viewDate} setCurrentDate={setViewDate} />
+         )}
+         {viewMode === 'map' && (
+            <FacilityMap />
          )}
       </div>
       

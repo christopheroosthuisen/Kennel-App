@@ -63,6 +63,49 @@ export const Reservations = () => {
     return searchMatch && statusMatch;
   });
 
+  const sortedReservations = [...filteredReservations].sort((a, b) => {
+    const petA = pets.find(p => p.id === a.petId);
+    const petB = pets.find(p => p.id === b.petId);
+    const ownerA = owners.find(o => o.id === a.ownerId);
+    const ownerB = owners.find(o => o.id === b.ownerId);
+
+    let valA: any = '';
+    let valB: any = '';
+
+    switch (sortConfig.key) {
+      case 'id':
+        valA = a.id;
+        valB = b.id;
+        break;
+      case 'petName':
+        valA = petA?.name || '';
+        valB = petB?.name || '';
+        break;
+      case 'ownerName':
+        valA = ownerA?.name || '';
+        valB = ownerB?.name || '';
+        break;
+      case 'type':
+        valA = a.type;
+        valB = b.type;
+        break;
+      case 'date':
+        valA = new Date(a.checkIn).getTime();
+        valB = new Date(b.checkIn).getTime();
+        break;
+      case 'status':
+        valA = a.status;
+        valB = b.status;
+        break;
+      default:
+        return 0;
+    }
+
+    if (valA < valB) return sortConfig.dir === 'asc' ? -1 : 1;
+    if (valA > valB) return sortConfig.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
@@ -138,7 +181,7 @@ export const Reservations = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredReservations.map(res => {
+              {sortedReservations.map(res => {
                 const pet = pets.find(p => p.id === res.petId);
                 const owner = owners.find(o => o.id === res.ownerId);
                 return (

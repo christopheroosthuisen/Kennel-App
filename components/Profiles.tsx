@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Search, Phone, Mail, MapPin, Dog, Plus, AlertTriangle, FileText, Syringe, 
@@ -11,6 +10,7 @@ import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, B
 import { EditOwnerModal, EditPetModal } from './EditModals';
 import { useCommunication } from './Messaging';
 import { useTeamChat } from './TeamChatContext';
+import { useToast } from './ToastContext';
 import { MOCK_VET_CLINICS } from '../constants'; // Keep vet clinics static for now
 import { Pet, Vaccine, Owner } from '../types';
 import { useData } from './DataContext';
@@ -371,15 +371,51 @@ export const Profiles = () => {
 
 // --- Medical Panel Component ---
 const MedicalPanel = ({ pet }: { pet: Pet }) => {
+   const { updatePet } = useData();
+   const { addToast } = useToast();
    const clinic = MOCK_VET_CLINICS.find(c => c.id === pet.vetClinicId);
    const [vaccines, setVaccines] = useState<Vaccine[]>(pet.vaccines || []);
    const [isAddVaxOpen, setIsAddVaxOpen] = useState(false);
+   
+   // Form State
+   const [vaxType, setVaxType] = useState('Rabies');
+   const [vaxDate, setVaxDate] = useState('');
+   const [vaxExpiry, setVaxExpiry] = useState('');
 
    const handleAddVaccine = (e: React.FormEvent) => {
       e.preventDefault();
-      // Logic would go here to add new vaccine
-      alert("Mock: Vaccine Added");
+      if (!vaxDate || !vaxExpiry) return;
+
+      const newVaccine: Vaccine = {
+         id: `v-${Date.now()}`,
+         name: vaxType,
+         dateAdministered: vaxDate,
+         dateExpires: vaxExpiry,
+         status: 'Valid' // Simplified logic
+      };
+
+      // Simple status determination
+      const today = new Date();
+      const exp = new Date(vaxExpiry);
+      const diffTime = exp.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 0) newVaccine.status = 'Expired';
+      else if (diffDays < 30) newVaccine.status = 'Expiring';
+      else newVaccine.status = 'Valid';
+
+      const updatedVaccines = [...vaccines, newVaccine];
+      setVaccines(updatedVaccines);
+      
+      // Update global context
+      updatePet(pet.id, { vaccines: updatedVaccines });
+      
+      addToast("Vaccine Record Added", "success");
       setIsAddVaxOpen(false);
+      
+      // Reset form
+      setVaxDate('');
+      setVaxExpiry('');
    };
 
    return (
@@ -502,7 +538,7 @@ const MedicalPanel = ({ pet }: { pet: Pet }) => {
             <form onSubmit={handleAddVaccine} className="space-y-4">
                <div>
                   <Label>Vaccine Type</Label>
-                  <Select autoFocus>
+                  <Select autoFocus value={vaxType} onChange={(e) => setVaxType(e.target.value)}>
                      <option>Rabies</option>
                      <option>Bordetella</option>
                      <option>DHPP</option>
@@ -511,8 +547,24 @@ const MedicalPanel = ({ pet }: { pet: Pet }) => {
                   </Select>
                </div>
                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Administered</Label><Input type="date"/></div>
-                  <div><Label>Expires</Label><Input type="date"/></div>
+                  <div>
+                     <Label>Administered</Label>
+                     <Input 
+                        type="date" 
+                        value={vaxDate} 
+                        onChange={(e) => setVaxDate(e.target.value)}
+                        required
+                     />
+                  </div>
+                  <div>
+                     <Label>Expires</Label>
+                     <Input 
+                        type="date" 
+                        value={vaxExpiry} 
+                        onChange={(e) => setVaxExpiry(e.target.value)}
+                        required
+                     />
+                  </div>
                </div>
                <div>
                   <Label>Verified By</Label>
@@ -671,6 +723,7 @@ const OwnerDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
 
 const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
   const { pets } = useData();
+  const { addToast } = useToast();
   const pet = pets.find(p => p.id === id);
   const { openDiscuss } = useTeamChat();
   const [tab, setTab] = useState('care');
@@ -775,9 +828,50 @@ const PetDetail = ({ id, onBack }: { id: string, onBack: () => void }) => {
       {/* Medical Tab Implementation */}
       {tab === 'medical' && <MedicalPanel pet={pet} />}
 
-      {/* Placeholder tabs for Behavior, Gallery */}
       {tab === 'behavior' && <div className="p-8 text-center text-slate-400">Behavior content</div>}
-      {tab === 'gallery' && <div className="p-8 text-center text-slate-400">Gallery content</div>}
+      
+      {/* Gallery with File Upload */}
+      {tab === 'gallery' && (
+         <div className="space-y-4">
+            <div className="flex justify-between items-center">
+               <h3 className="font-bold text-slate-900">Photo Gallery</h3>
+               <label className="cursor-pointer">
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                     // Mock upload
+                     if(e.target.files?.[0]) {
+                        // In real app: upload to server. Here: just toast.
+                        addToast("Photo uploaded successfully!", "success"); 
+                     }
+                  }}/>
+                  <Button as="span" size="sm" className="gap-2"><UploadCloud size={14}/> Upload Photo</Button>
+               </label>
+            </div>
+
+            {/* Mock Gallery Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               {/* Include main photo */}
+               <div className="aspect-square rounded-lg overflow-hidden border border-slate-200 relative group cursor-pointer">
+                  <img src={pet.photoUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="Profile" />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">Profile</div>
+               </div>
+               
+               {/* Mock Additional Photos */}
+               {[1,2,3].map(i => (
+                  <div key={i} className="aspect-square rounded-lg overflow-hidden border border-slate-200 relative group cursor-pointer bg-slate-100">
+                     <img 
+                        src={`https://source.unsplash.com/random/400x400?dog&sig=${pet.id}${i}`} 
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                        alt="Gallery"
+                        onError={(e) => (e.currentTarget.src = 'https://placehold.co/400?text=Photo')}
+                     />
+                     <button className="absolute top-2 right-2 bg-white/90 text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white">
+                        <Trash2 size={14}/>
+                     </button>
+                  </div>
+               ))}
+            </div>
+         </div>
+      )}
 
       {/* Edit Pet Modal */}
       {isEditOpen && <EditPetModal isOpen={true} onClose={() => setIsEditOpen(false)} id={pet.id} />}

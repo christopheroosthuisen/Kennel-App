@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -8,8 +9,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Button
-export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline', size?: 'sm' | 'md' | 'lg' | 'icon' }>(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
+  as?: React.ElementType;
+}
+
+export const Button = React.forwardRef<HTMLElement, ButtonProps>(
+  ({ className, variant = 'primary', size = 'md', as: Component = 'button', ...props }, ref) => {
     const variants = {
       primary: 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm border border-transparent',
       secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 border border-transparent',
@@ -25,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
     };
 
     return (
-      <button
+      <Component
         ref={ref}
         className={cn(
           'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:pointer-events-none disabled:opacity-50',
@@ -136,19 +143,19 @@ export const Label = ({ children, className, ...props }: React.LabelHTMLAttribut
   </label>
 );
 
-// Select (Simple Native Wrapper)
+// Select
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative">
+    <div className={cn(
+      'relative flex h-10 w-full items-center rounded-md border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-primary-500 overflow-hidden',
+      className
+    )}>
       <select
         ref={ref}
-        className={cn(
-          'flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 appearance-none',
-          className
-        )}
+        className="h-full w-full appearance-none bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 z-10 relative"
         {...props}
       />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="m6 9 6 6 6-6"/></svg>
       </div>
     </div>

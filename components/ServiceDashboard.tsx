@@ -6,88 +6,88 @@ import {
   Scissors, Zap, Pill, Award, LayoutList, Kanban, ChevronRight
 } from 'lucide-react';
 import { Card, Button, Badge, cn, Select, Modal, Label, Textarea, Input } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_USERS } from '../constants';
+import { MOCK_USERS } from '../constants';
 import { ServiceTask, ServiceDepartment, ReservationStatus, ServiceType } from '../types';
-
-// --- Mock Data Generator for Service Tasks ---
-const generateTasks = (): ServiceTask[] => {
-  const tasks: ServiceTask[] = [];
-  const now = new Date();
-
-  MOCK_RESERVATIONS.forEach(res => {
-    // Only generate for checked-in or expected
-    if (res.status !== ReservationStatus.CheckedIn && res.status !== ReservationStatus.Expected) return;
-
-    const pet = MOCK_PETS.find(p => p.id === res.petId);
-    
-    // 1. Core Service Task
-    if (res.type === ServiceType.Grooming) {
-      tasks.push({
-        id: `t-${res.id}-main`,
-        reservationId: res.id,
-        petId: res.petId,
-        department: 'Grooming',
-        name: 'Full Groom',
-        status: 'In Progress',
-        scheduledTime: new Date(now.setHours(10, 0)).toISOString(),
-        durationMinutes: 90,
-        assignedTo: 'u2'
-      });
-    }
-
-    // 2. Training Program Tasks
-    if (res.type === ServiceType.Training || pet?.activeProgram) {
-       tasks.push({
-        id: `t-${res.id}-train`,
-        reservationId: res.id,
-        petId: res.petId,
-        department: 'Training',
-        name: pet?.activeProgram ? `Program Session: ${pet.activeProgram}` : 'Obedience 1-on-1',
-        programName: pet?.activeProgram,
-        status: 'Pending',
-        scheduledTime: new Date(now.setHours(14, 0)).toISOString(),
-        durationMinutes: 45,
-        assignedTo: 'u3'
-      });
-    }
-
-    // 3. Add-on Services Exploded into Tasks
-    res.services.forEach((svc, i) => {
-      let dept: ServiceDepartment = 'Enrichment';
-      if (svc.includes('Bath') || svc.includes('Nail')) dept = 'Grooming';
-      if (svc.includes('Walk') || svc.includes('Play')) dept = 'Enrichment';
-      if (svc.includes('Med')) dept = 'Medical';
-
-      tasks.push({
-        id: `t-${res.id}-${i}`,
-        reservationId: res.id,
-        petId: res.petId,
-        department: dept,
-        name: svc,
-        status: i % 2 === 0 ? 'Completed' : 'Pending', // Random status
-        scheduledTime: new Date(now.setHours(9 + i, 30)).toISOString(),
-        durationMinutes: 15,
-        assignedTo: 'u1'
-      });
-    });
-  });
-
-  return tasks.sort((a,b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
-};
-
-const SERVICE_TASKS = generateTasks();
+import { useData } from './DataContext';
 
 export const ServiceDashboard = () => {
+  const { reservations, pets } = useData();
   const [viewMode, setViewMode] = useState<'timeline' | 'board'>('board');
   const [selectedDept, setSelectedDept] = useState<ServiceDepartment | 'All'>('All');
   const [assignedUser, setAssignedUser] = useState<string>('all'); // 'all' or user ID
   const [search, setSearch] = useState('');
   const [selectedTask, setSelectedTask] = useState<ServiceTask | null>(null);
 
+  // Dynamic Task Generation
+  const serviceTasks = useMemo(() => {
+    const tasks: ServiceTask[] = [];
+    const now = new Date(); // In a real app, this would be based on the reservation dates
+
+    reservations.forEach(res => {
+      // Only generate for checked-in or expected
+      if (res.status !== ReservationStatus.CheckedIn && res.status !== ReservationStatus.Expected) return;
+
+      const pet = pets.find(p => p.id === res.petId);
+      
+      // 1. Core Service Task
+      if (res.type === ServiceType.Grooming) {
+        tasks.push({
+          id: `t-${res.id}-main`,
+          reservationId: res.id,
+          petId: res.petId,
+          department: 'Grooming',
+          name: 'Full Groom',
+          status: 'In Progress',
+          scheduledTime: new Date(new Date().setHours(10, 0)).toISOString(), // Mock time
+          durationMinutes: 90,
+          assignedTo: 'u2'
+        });
+      }
+
+      // 2. Training Program Tasks
+      if (res.type === ServiceType.Training || pet?.activeProgram) {
+         tasks.push({
+          id: `t-${res.id}-train`,
+          reservationId: res.id,
+          petId: res.petId,
+          department: 'Training',
+          name: pet?.activeProgram ? `Program Session: ${pet.activeProgram}` : 'Obedience 1-on-1',
+          programName: pet?.activeProgram,
+          status: 'Pending',
+          scheduledTime: new Date(new Date().setHours(14, 0)).toISOString(),
+          durationMinutes: 45,
+          assignedTo: 'u3'
+        });
+      }
+
+      // 3. Add-on Services Exploded into Tasks
+      res.services.forEach((svc, i) => {
+        let dept: ServiceDepartment = 'Enrichment';
+        if (svc.includes('Bath') || svc.includes('Nail')) dept = 'Grooming';
+        if (svc.includes('Walk') || svc.includes('Play')) dept = 'Enrichment';
+        if (svc.includes('Med')) dept = 'Medical';
+
+        tasks.push({
+          id: `t-${res.id}-${i}`,
+          reservationId: res.id,
+          petId: res.petId,
+          department: dept,
+          name: svc,
+          status: i % 2 === 0 ? 'Completed' : 'Pending', // Random status for demo
+          scheduledTime: new Date(new Date().setHours(9 + i, 30)).toISOString(),
+          durationMinutes: 15,
+          assignedTo: 'u1'
+        });
+      });
+    });
+
+    return tasks.sort((a,b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
+  }, [reservations, pets]);
+
   // Filter Logic
   const filteredTasks = useMemo(() => {
-    return SERVICE_TASKS.filter(task => {
-      const pet = MOCK_PETS.find(p => p.id === task.petId);
+    return serviceTasks.filter(task => {
+      const pet = pets.find(p => p.id === task.petId);
       const matchesSearch = !search || 
          task.name.toLowerCase().includes(search.toLowerCase()) || 
          pet?.name.toLowerCase().includes(search.toLowerCase());
@@ -96,7 +96,7 @@ export const ServiceDashboard = () => {
 
       return matchesSearch && matchesDept && matchesUser;
     });
-  }, [search, selectedDept, assignedUser]);
+  }, [serviceTasks, search, selectedDept, assignedUser, pets]);
 
   // Derived Stats
   const stats = {
@@ -198,21 +198,21 @@ export const ServiceDashboard = () => {
        {/* Main View Area */}
        <div className="flex-1 overflow-hidden">
           {viewMode === 'board' ? (
-             <DepartmentBoard tasks={filteredTasks} onTaskClick={setSelectedTask} />
+             <DepartmentBoard tasks={filteredTasks} onTaskClick={setSelectedTask} pets={pets} />
           ) : (
-             <TaskTimeline tasks={filteredTasks} onTaskClick={setSelectedTask} />
+             <TaskTimeline tasks={filteredTasks} onTaskClick={setSelectedTask} pets={pets} />
           )}
        </div>
 
        {/* Task Detail Modal */}
-       <ServiceTaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+       <ServiceTaskModal task={selectedTask} onClose={() => setSelectedTask(null)} pets={pets} />
     </div>
   );
 };
 
 // --- Sub-Components ---
 
-const DepartmentBoard = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskClick: (t: ServiceTask) => void }) => {
+const DepartmentBoard = ({ tasks, onTaskClick, pets }: { tasks: ServiceTask[], onTaskClick: (t: ServiceTask) => void, pets: any[] }) => {
    const departments: { id: ServiceDepartment, icon: any, color: string }[] = [
       { id: 'Training', icon: Award, color: 'bg-purple-100 text-purple-700' },
       { id: 'Grooming', icon: Scissors, color: 'bg-pink-100 text-pink-700' },
@@ -238,7 +238,7 @@ const DepartmentBoard = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskC
                   
                   <div className="p-3 space-y-3 overflow-y-auto flex-1">
                      {deptTasks.length > 0 ? deptTasks.map(task => (
-                        <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+                        <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} pets={pets} />
                      )) : (
                         <div className="text-center py-10 text-slate-400 text-sm italic">
                            No tasks
@@ -252,7 +252,7 @@ const DepartmentBoard = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskC
    );
 };
 
-const TaskTimeline = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskClick: (t: ServiceTask) => void }) => {
+const TaskTimeline = ({ tasks, onTaskClick, pets }: { tasks: ServiceTask[], onTaskClick: (t: ServiceTask) => void, pets: any[] }) => {
    // Group by hour
    const grouped = useMemo(() => {
       const groups: Record<string, ServiceTask[]> = {};
@@ -276,7 +276,7 @@ const TaskTimeline = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskClic
                   <h3 className="font-bold text-slate-500 mb-4">{hour}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                      {grouped[hour].map(task => (
-                        <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+                        <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} pets={pets} />
                      ))}
                   </div>
                </div>
@@ -292,10 +292,11 @@ const TaskTimeline = ({ tasks, onTaskClick }: { tasks: ServiceTask[], onTaskClic
 interface TaskCardProps {
   task: ServiceTask;
   onClick: () => void;
+  pets: any[];
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
-   const pet = MOCK_PETS.find(p => p.id === task.petId);
+const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, pets }) => {
+   const pet = pets.find(p => p.id === task.petId);
    const assignee = MOCK_USERS.find(u => u.id === task.assignedTo);
    
    const hasAlerts = pet?.alerts && pet.alerts.length > 0;
@@ -356,10 +357,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
    );
 };
 
-const ServiceTaskModal = ({ task, onClose }: { task: ServiceTask | null, onClose: () => void }) => {
+const ServiceTaskModal = ({ task, onClose, pets }: { task: ServiceTask | null, onClose: () => void, pets: any[] }) => {
+   const { owners } = useData();
    if (!task) return null;
-   const pet = MOCK_PETS.find(p => p.id === task.petId);
-   const owner = MOCK_OWNERS.find(o => o.id === pet?.ownerId);
+   const pet = pets.find(p => p.id === task.petId);
+   const owner = owners.find(o => o.id === pet?.ownerId);
 
    return (
       <Modal isOpen={!!task} onClose={onClose} title="Service Details">

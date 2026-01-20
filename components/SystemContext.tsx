@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 import { FacilityConfig, Role, TimeClockConfig, Permission, PricingRule, TaxRate, FormTemplate, InvoiceSettings, ServiceQuota, ServiceType, PortalSettings } from '../types';
 import { MOCK_PRICING_RULES, MOCK_TAX_RATES } from '../constants';
 
@@ -212,18 +212,24 @@ export const SystemProvider = ({ children }: React.PropsWithChildren<{}>) => {
 
   const updatePortalSettings = (updates: Partial<PortalSettings>) => setPortalSettings(prev => ({ ...prev, ...updates }));
 
+  // Memoize value to prevent re-renders
+  const value = useMemo(() => ({
+    facilityInfo, updateFacilityInfo,
+    roles, addRole, updateRole, deleteRole,
+    timeClockSettings, updateTimeClockSettings,
+    pricingRules, addPricingRule, updatePricingRule, deletePricingRule,
+    taxRates, addTaxRate, updateTaxRate, deleteTaxRate,
+    forms, addForm, updateForm, deleteForm,
+    invoiceSettings, updateInvoiceSettings,
+    quotas, updateQuota,
+    portalSettings, updatePortalSettings
+  }), [
+    facilityInfo, roles, timeClockSettings, pricingRules, 
+    taxRates, forms, invoiceSettings, quotas, portalSettings
+  ]);
+
   return (
-    <SystemContext.Provider value={{
-      facilityInfo, updateFacilityInfo,
-      roles, addRole, updateRole, deleteRole,
-      timeClockSettings, updateTimeClockSettings,
-      pricingRules, addPricingRule, updatePricingRule, deletePricingRule,
-      taxRates, addTaxRate, updateTaxRate, deleteTaxRate,
-      forms, addForm, updateForm, deleteForm,
-      invoiceSettings, updateInvoiceSettings,
-      quotas, updateQuota,
-      portalSettings, updatePortalSettings
-    }}>
+    <SystemContext.Provider value={value}>
       {children}
     </SystemContext.Provider>
   );

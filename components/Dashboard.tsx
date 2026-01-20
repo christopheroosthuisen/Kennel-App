@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, Calendar, CheckCircle, Clock, AlertTriangle, 
@@ -25,7 +24,6 @@ interface ColumnDef {
   visible: boolean;
 }
 
-// ... ICON_MAP remains the same ...
 const ICON_MAP: Record<string, { icon: React.ReactNode, color: string, title: string, border?: string }> = {
   'Meds': { icon: '💊', color: 'bg-red-50 text-red-700', border: 'border-red-200', title: 'Has Medications' },
   'Aggressive': { icon: '🛑', color: 'bg-red-100 text-red-800', border: 'border-red-300', title: 'Aggressive / Caution' },
@@ -39,6 +37,21 @@ const ICON_MAP: Record<string, { icon: React.ReactNode, color: string, title: st
   'Puppy': { icon: '🐾', color: 'bg-pink-50 text-pink-700', border: 'border-pink-200', title: 'Puppy' },
   'Note': { icon: <FileText size={12}/>, color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-200', title: 'Note' },
 };
+
+const StatWidget = ({ title, count, icon: Icon, color, subtext }: { title: string, count: number, icon: any, color: string, subtext?: string }) => (
+  <Card className="p-4 flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer border-l-4" style={{ borderLeftColor: color }}>
+     <div className="flex justify-between items-start">
+       <div>
+         <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{title}</p>
+         <h3 className="text-2xl font-bold text-slate-800 mt-1">{count}</h3>
+       </div>
+       <div className="p-2 rounded-full bg-slate-50">
+         <Icon size={20} className="text-slate-400" />
+       </div>
+     </div>
+     {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+  </Card>
+);
 
 export const Dashboard = () => {
   const { reservations, pets, owners, updateReservation } = useData();
@@ -134,7 +147,7 @@ export const Dashboard = () => {
         )}
         {rawTags.map((tagString, idx) => {
           const [key, note] = tagString.includes(':') ? tagString.split(':') : [tagString, null];
-          const config = ICON_MAP[key];
+          const config = ICON_MAP[key as keyof typeof ICON_MAP];
           if (!config) return null;
           const tooltip = note ? `${config.title}: ${note}` : config.title;
           return (
@@ -153,21 +166,6 @@ export const Dashboard = () => {
     alert('Pet Checked In Successfully!');
     setIsCheckInOpen(false);
   };
-
-  const StatWidget = ({ title, count, icon: Icon, color, subtext }: { title: string, count: number, icon: any, color: string, subtext?: string }) => (
-    <Card className="p-4 flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer border-l-4" style={{ borderLeftColor: color }}>
-       <div className="flex justify-between items-start">
-         <div>
-           <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{title}</p>
-           <h3 className="text-2xl font-bold text-slate-800 mt-1">{count}</h3>
-         </div>
-         <div className="p-2 rounded-full bg-slate-50">
-           <Icon size={20} className="text-slate-400" />
-         </div>
-       </div>
-       {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
-    </Card>
-  );
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-24">

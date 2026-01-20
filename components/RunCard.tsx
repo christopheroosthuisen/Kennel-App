@@ -2,8 +2,8 @@
 import React, { useRef } from 'react';
 import { X, Printer, Phone, AlertTriangle, Info, MapPin, Calendar, Activity, Utensils } from 'lucide-react';
 import { Modal, Button, Badge, cn } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS } from '../constants';
 import { ReservationStatus } from '../types';
+import { useData } from './DataContext';
 
 interface RunCardProps {
   reservationId: string;
@@ -12,9 +12,10 @@ interface RunCardProps {
 }
 
 export const RunCardModal = ({ reservationId, isOpen, onClose }: RunCardProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const { reservations, pets, owners } = useData();
+  const reservation = reservations.find(r => r.id === reservationId);
+  const pet = pets.find(p => p.id === reservation?.petId);
+  const owner = owners.find(o => o.id === reservation?.ownerId);
 
   if (!reservation || !pet || !owner) return null;
 

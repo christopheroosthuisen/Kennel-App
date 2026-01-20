@@ -9,6 +9,7 @@ import {
   LogOut, CreditCard, X, Info
 } from 'lucide-react';
 import { useData } from './DataContext';
+import { useSystem } from './SystemContext';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -135,6 +136,13 @@ export const ServiceManager = ({
   selectedServices: string[], 
   onChange: (services: string[]) => void 
 }) => {
+  // Use System Context to get dynamic settings
+  const { pricingRules } = useSystem(); 
+  
+  // Use local mock for categories if not in context, but dynamic logic is here
+  // In a full DB app, we'd fetch "ServiceItems" table. 
+  // For now, we enhance the static list to be cleaner.
+  
   const toggleService = (name: string) => {
     if (selectedServices.includes(name)) {
       onChange(selectedServices.filter(s => s !== name));
@@ -143,13 +151,12 @@ export const ServiceManager = ({
     }
   };
 
-  // Use MOCK_SERVICE_CONFIGS to render available services, or static categories if simpler
   const categories = ['Grooming', 'Enrichment', 'Exercise', 'Health'];
 
   return (
     <div className="space-y-6">
       {categories.map(cat => {
-        // Filter mock items. In a real app this would come from a settings context.
+        // Defined here for demo, but ideally comes from SystemContext.facilityInfo or similar
         const catItems = [
            { name: 'Exit Bath', price: 30, category: 'Grooming' },
            { name: 'Nail Trim', price: 15, category: 'Grooming' },
@@ -168,6 +175,11 @@ export const ServiceManager = ({
             <div className="grid grid-cols-1 gap-2">
               {catItems.map(item => {
                 const isSelected = selectedServices.includes(item.name);
+                
+                // Check if there is a pricing rule override
+                const rule = pricingRules.find(r => r.enabled && r.triggerCondition.includes(item.name));
+                const finalPrice = rule ? (rule.isPercentage ? item.price * (1 + rule.amount/100) : item.price + rule.amount) : item.price;
+
                 return (
                   <div 
                     key={item.name} 
@@ -183,7 +195,10 @@ export const ServiceManager = ({
                       </div>
                       <div>
                         <div className="font-medium text-slate-800 text-sm">{item.name}</div>
-                        <div className="text-xs text-slate-500">${item.price.toFixed(2)}</div>
+                        <div className="text-xs text-slate-500">
+                           ${finalPrice.toFixed(2)}
+                           {rule && <span className="text-[10px] text-amber-600 ml-1">(Adjusted)</span>}
+                        </div>
                       </div>
                     </div>
                     
@@ -769,7 +784,7 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
                   <Button variant="outline" className="w-full gap-2"><DollarSign size={16}/> Take Deposit</Button>
                </div>
             </div>
-          )}
+         )}
         </div>
 
         {/* Footer Actions */}

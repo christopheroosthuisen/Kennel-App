@@ -5,9 +5,10 @@ import {
   Send, Calculator, Percent, Calendar, CheckCircle, AlertCircle, MessageCircle 
 } from 'lucide-react';
 import { Modal, Button, Input, Select, Badge, cn, Label } from './Common';
-import { MOCK_RESERVATIONS, MOCK_PETS, MOCK_OWNERS, MOCK_SERVICE_CONFIGS } from '../constants';
+import { MOCK_SERVICE_CONFIGS } from '../constants';
 import { ReservationStatus } from '../types';
 import { useTeamChat } from './TeamChatContext';
+import { useData } from './DataContext';
 
 interface EstimateModalProps {
   reservationId: string;
@@ -33,9 +34,10 @@ interface Payment {
 }
 
 export const EstimateModal = ({ reservationId, isOpen, onClose }: EstimateModalProps) => {
-  const reservation = MOCK_RESERVATIONS.find(r => r.id === reservationId);
-  const pet = MOCK_PETS.find(p => p.id === reservation?.petId);
-  const owner = MOCK_OWNERS.find(o => o.id === reservation?.ownerId);
+  const { reservations, pets, owners } = useData();
+  const reservation = reservations.find(r => r.id === reservationId);
+  const pet = pets.find(p => p.id === reservation?.petId);
+  const owner = owners.find(o => o.id === reservation?.ownerId);
   const { openDiscuss } = useTeamChat();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -88,7 +90,10 @@ export const EstimateModal = ({ reservationId, isOpen, onClose }: EstimateModalP
       // Mock existing payments if any (random logic for demo)
       if (reservation.status === 'Checked Out') {
          // If checked out, assume fully paid for demo
-         setPayments([{ id: 'p1', date: new Date().toISOString(), amount: 0, method: 'Credit Card' }]); // Amount calc handled below
+         // Re-calculating total to fake a paid invoice
+         const tempSub = initialItems.reduce((s, i) => s + i.quantity * i.rate, 0);
+         const tempTax = tempSub * 0.08;
+         setPayments([{ id: 'p1', date: new Date().toISOString(), amount: tempSub + tempTax, method: 'Credit Card' }]);
       } else {
          setPayments([]);
       }

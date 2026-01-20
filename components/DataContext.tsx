@@ -1,13 +1,36 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { 
   Owner, Pet, Reservation, CareTask, ReservationStatus, 
-  ServiceType, Invoice, Notification, ClassSession, ClassEnrollment, ReportCard 
+  Invoice, Notification, ClassSession, ClassEnrollment, ReportCard 
 } from '../types';
 import { 
   MOCK_OWNERS, MOCK_PETS, MOCK_RESERVATIONS, MOCK_CARE_TASKS, 
   MOCK_INVOICES, MOCK_NOTIFICATIONS, MOCK_CLASS_SESSIONS, MOCK_CLASS_ENROLLMENTS, MOCK_REPORT_CARDS 
 } from '../constants';
+
+// Helper for local storage persistence
+function useStickyState<T>(defaultValue: T, key: string): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stickyValue = window.localStorage.getItem(key);
+      return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
+    } catch (e) {
+      console.warn(`Error reading ${key} from localStorage`, e);
+      return defaultValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`Error writing ${key} to localStorage`, e);
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
 
 interface DataContextType {
   owners: Owner[];
@@ -59,23 +82,24 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }: { children?: ReactNode }) => {
-  // Initialize state with Mocks
-  const [owners, setOwners] = useState<Owner[]>(MOCK_OWNERS);
-  const [pets, setPets] = useState<Pet[]>(MOCK_PETS);
-  const [reservations, setReservations] = useState<Reservation[]>(MOCK_RESERVATIONS);
-  const [careTasks, setCareTasks] = useState<CareTask[]>(MOCK_CARE_TASKS);
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [reportCards, setReportCards] = useState<ReportCard[]>(MOCK_REPORT_CARDS);
-  const [classSessions, setClassSessions] = useState<ClassSession[]>(MOCK_CLASS_SESSIONS);
-  const [classEnrollments, setClassEnrollments] = useState<ClassEnrollment[]>(MOCK_CLASS_ENROLLMENTS);
+  // Initialize state with Persistence
+  const [owners, setOwners] = useStickyState<Owner[]>(MOCK_OWNERS, 'kennel_owners');
+  const [pets, setPets] = useStickyState<Pet[]>(MOCK_PETS, 'kennel_pets');
+  const [reservations, setReservations] = useStickyState<Reservation[]>(MOCK_RESERVATIONS, 'kennel_reservations');
+  const [careTasks, setCareTasks] = useStickyState<CareTask[]>(MOCK_CARE_TASKS, 'kennel_care_tasks');
+  const [invoices, setInvoices] = useStickyState<Invoice[]>(MOCK_INVOICES, 'kennel_invoices');
+  const [notifications, setNotifications] = useStickyState<Notification[]>(MOCK_NOTIFICATIONS, 'kennel_notifications');
+  const [reportCards, setReportCards] = useStickyState<ReportCard[]>(MOCK_REPORT_CARDS, 'kennel_report_cards');
+  const [classSessions, setClassSessions] = useStickyState<ClassSession[]>(MOCK_CLASS_SESSIONS, 'kennel_classes');
+  const [classEnrollments, setClassEnrollments] = useStickyState<ClassEnrollment[]>(MOCK_CLASS_ENROLLMENTS, 'kennel_enrollments');
 
   // Reservation Actions
   const addReservation = (res: Reservation) => {
     setReservations(prev => [...prev, res]);
-    // Auto-create notification
     const petName = pets.find(p => p.id === res.petId)?.name || 'Pet';
-    addNotification({
+    
+    // Auto-create notification
+    const newNote: Notification = {
       id: `n-${Date.now()}`,
       title: 'New Reservation Created',
       message: `${petName} has been booked for ${res.type}.`,
@@ -86,7 +110,8 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
       relatedPetId: res.petId,
       relatedOwnerId: res.ownerId,
       comments: []
-    });
+    };
+    setNotifications(prev => [newNote, ...prev]);
   };
 
   const updateReservation = (id: string, updates: Partial<Reservation>) => {
@@ -126,17 +151,20 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     setClassEnrollments(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
   };
 
+  // Memoize value to prevent re-renders
+  const value = useMemo(() => ({
+    owners, pets, reservations, careTasks, invoices, notifications, reportCards, classSessions, classEnrollments,
+    addReservation, updateReservation, deleteReservation,
+    addPet, updatePet,
+    addOwner, updateOwner,
+    updateCareTask,
+    addNotification, markNotificationRead,
+    updateReportCard, addReportCard,
+    addClassSession, enrollPetInClass, updateClassEnrollment
+  }), [owners, pets, reservations, careTasks, invoices, notifications, reportCards, classSessions, classEnrollments]);
+
   return (
-    <DataContext.Provider value={{
-      owners, pets, reservations, careTasks, invoices, notifications, reportCards, classSessions, classEnrollments,
-      addReservation, updateReservation, deleteReservation,
-      addPet, updatePet,
-      addOwner, updateOwner,
-      updateCareTask,
-      addNotification, markNotificationRead,
-      updateReportCard, addReportCard,
-      addClassSession, enrollPetInClass, updateClassEnrollment
-    }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
