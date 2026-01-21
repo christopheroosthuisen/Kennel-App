@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Hash, Lock, Search, Plus, Send, Smile, Paperclip, 
@@ -7,7 +6,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Input, cn, Badge, Modal, Textarea } from './Common';
+import { Card, Button, Input, cn, Badge, Modal, Textarea, SearchInput } from './Common';
 import { MOCK_USERS } from '../constants';
 import { InternalChannel, InternalMessage } from '../types';
 import { useTeamChat } from './TeamChatContext';
@@ -89,10 +88,9 @@ export const InternalChat = () => {
               Partners Team <ChevronDown size={14}/>
            </h2>
            <div className="mt-4 relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
-              <input 
+              <SearchInput 
                  placeholder="Jump to..." 
-                 className="w-full bg-slate-800 text-slate-200 text-xs rounded-md py-1.5 pl-8 pr-2 border border-slate-700 focus:outline-none focus:border-slate-500"
+                 className="w-full bg-slate-800 text-slate-200 text-xs rounded-md pl-8 pr-2 border border-slate-700 focus:outline-none focus:border-slate-500"
               />
            </div>
         </div>

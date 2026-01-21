@@ -1,12 +1,33 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { X, ArrowUp, ArrowDown, Megaphone, Trash2, Mail } from 'lucide-react';
+import { X, Search, ArrowUp, ArrowDown, Megaphone, Trash2, Mail } from 'lucide-react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// --- Hooks ---
+
+export function useClickOutside(ref: React.RefObject<HTMLElement>, handler: (event: MouseEvent | TouchEvent) => void) {
+  useEffect(() => {
+    const listener = (event: MouseEvent | TouchEvent) => {
+      // Do nothing if clicking ref's element or descendent elements
+      if (!ref.current || ref.current.contains(event.target as Node)) {
+        return;
+      }
+      handler(event);
+    };
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]);
+}
+
+// --- Components ---
 
 // Button
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -98,6 +119,21 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   )
 );
 Input.displayName = 'Input';
+
+// Search Input (Standardized)
+export const SearchInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, ...props }, ref) => (
+    <div className={cn("relative", className)}>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+      <Input 
+        ref={ref}
+        className="pl-9" 
+        {...props}
+      />
+    </div>
+  )
+);
+SearchInput.displayName = 'SearchInput';
 
 // Textarea
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
@@ -262,3 +298,19 @@ export const SortableHeader = ({ label, sortKey, currentSort, onSort, className 
     </th>
   );
 };
+
+// Stat Widget
+export const StatCard = ({ title, count, icon: Icon, color, subtext, className }: { title: string, count: number, icon: any, color: string, subtext?: string, className?: string }) => (
+  <Card className={cn("p-4 flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer border-l-4", className)} style={{ borderLeftColor: color }}>
+     <div className="flex justify-between items-start">
+       <div>
+         <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{title}</p>
+         <h3 className="text-2xl font-bold text-slate-800 mt-1">{count}</h3>
+       </div>
+       <div className="p-2 rounded-full bg-slate-50">
+         <Icon size={20} className="text-slate-400" />
+       </div>
+     </div>
+     {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+  </Card>
+);

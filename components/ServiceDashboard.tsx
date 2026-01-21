@@ -1,11 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   CheckSquare, Filter, Clock, Calendar, Search, AlertTriangle, 
   Dog, User, MoreHorizontal, CheckCircle, Circle, Play,
   Scissors, Zap, Pill, Award, LayoutList, Kanban, ChevronRight
 } from 'lucide-react';
-import { Card, Button, Badge, cn, Select, Modal, Label, Textarea, Input } from './Common';
+import { Card, Button, Badge, cn, Select, Modal, Label, Textarea, Input, SearchInput } from './Common';
 import { MOCK_USERS } from '../constants';
 import { ServiceTask, ServiceDepartment, ReservationStatus, ServiceType } from '../types';
 import { useData } from './DataContext';
@@ -185,8 +184,7 @@ export const ServiceDashboard = () => {
              ))}
           </div>
           <div className="relative flex-1">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14}/>
-             <Input 
+             <SearchInput 
                 placeholder="Search tasks or pets..." 
                 className="pl-9 h-9 text-sm"
                 value={search}

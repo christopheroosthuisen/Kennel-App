@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { 
   GraduationCap, Calendar, Users, Plus, Search, Filter, 
   ChevronRight, MoreHorizontal, CheckCircle, Clock, 
   DollarSign, Edit2, Trash2, User, Dog
 } from 'lucide-react';
-import { Card, Button, Input, Select, Badge, cn, Modal, Label, Tabs } from './Common';
+import { Card, Button, Input, Select, Badge, cn, Modal, Label, Tabs, SearchInput } from './Common';
 import { MOCK_CLASS_TYPES, MOCK_USERS } from '../constants';
 import { useData } from './DataContext';
 import { ClassSession, ClassEnrollment } from '../types';
@@ -69,9 +68,8 @@ export const Classes = () => {
             
             {activeTab === 'schedule' && (
                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/>
-                     <Input placeholder="Search classes..." className="pl-8 h-9 text-xs"/>
+                  <div className="flex-1">
+                     <SearchInput placeholder="Search classes..." className="h-9 text-xs"/>
                   </div>
                   <Button size="icon" className="h-9 w-9" onClick={() => setIsNewClassOpen(true)}><Plus size={16}/></Button>
                </div>
@@ -300,16 +298,13 @@ const ClassDetail = ({ sessionId }: { sessionId: string }) => {
             <div className="space-y-4">
                <div>
                   <Label>Search Pet or Owner</Label>
-                  <div className="relative">
-                     <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                     <Input 
-                        placeholder="Type name..." 
-                        className="pl-9"
-                        value={searchPet}
-                        onChange={(e) => setSearchPet(e.target.value)}
-                        autoFocus
-                     />
-                  </div>
+                  <SearchInput 
+                     placeholder="Type name..." 
+                     className="pl-9"
+                     value={searchPet}
+                     onChange={(e) => setSearchPet(e.target.value)}
+                     autoFocus
+                  />
                </div>
                
                <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto">

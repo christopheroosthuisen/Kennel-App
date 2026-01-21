@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Menu, Bell, Search, ShoppingCart, HelpCircle, User, LayoutDashboard, 
@@ -9,7 +8,7 @@ import {
   CheckSquare, Play, Bot, Terminal
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { cn, Button, Input, Badge, Tabs, Card } from './Common';
+import { cn, Button, Input, Badge, Tabs, Card, SearchInput } from './Common';
 import { MOCK_CHANNELS, MOCK_AGENTS } from '../constants';
 import { AiAgent } from '../types';
 import { useData } from './DataContext';
@@ -440,11 +439,10 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
                 className="relative w-96 group hidden md:block"
                 onClick={() => setQuickNavOpen(true)}
              >
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-primary-500 transition-colors" size={18} />
-               <input 
+               <SearchInput 
                  readOnly
                  placeholder="Search owners, pets, reservations... (Cmd+K)" 
-                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-primary-500 cursor-text hover:bg-slate-200 transition-colors placeholder:text-slate-400"
+                 className="w-full"
                />
              </div>
            </div>
@@ -617,13 +615,12 @@ export const AppLayout = ({ children, showAI, toggleAI }: { children?: React.Rea
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setQuickNavOpen(false)} />
           <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
              <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-               <Search className="text-slate-400" />
-               <input 
+               <SearchInput 
                  autoFocus
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
                  placeholder="Go to page or search owners, pets, reservations... (Cmd+K)" 
-                 className="flex-1 text-lg font-medium placeholder:text-slate-400 outline-none"
+                 className="flex-1 text-lg font-medium placeholder:text-slate-400 outline-none border-none shadow-none"
                />
                <span className="text-xs text-slate-400 font-medium px-2 py-1 bg-slate-100 rounded">ESC</span>
              </div>

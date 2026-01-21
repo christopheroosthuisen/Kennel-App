@@ -1,10 +1,9 @@
-
 import React, { useState, createContext, useContext, useEffect } from 'react';
 import { 
   MessageSquare, Mail, Phone, Send, Paperclip, X, Search, 
   Filter, MoreHorizontal, Check, Clock, User, ChevronRight 
 } from 'lucide-react';
-import { Modal, Button, Input, Textarea, Select, Badge, cn, Tabs } from './Common';
+import { Modal, Button, Input, Textarea, Select, Badge, cn, Tabs, SearchInput } from './Common';
 import { MOCK_OWNERS, MOCK_EMAIL_TEMPLATES, MOCK_MESSAGES } from '../constants';
 import { Message } from '../types';
 
@@ -97,13 +96,12 @@ const CommunicationModal = ({ isOpen, onClose, initialData }: { isOpen: boolean,
              <div className="flex-1">
                 <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">To</label>
                 <div className="relative">
-                   <Input 
+                   <SearchInput 
                       value={recipient} 
                       onChange={(e) => setRecipient(e.target.value)} 
                       placeholder="Search Client..." 
                       className="pl-8"
                    />
-                   <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/>
                 </div>
              </div>
              {activeTab === 'Email' && (
@@ -235,8 +233,7 @@ export const MessagesPage = () => {
           <div className="p-4 border-b border-slate-200 bg-white">
              <h2 className="font-bold text-lg text-slate-900 mb-4">Messages</h2>
              <div className="relative mb-3">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-                <Input placeholder="Search name or message..." className="pl-9 bg-slate-50"/>
+                <SearchInput placeholder="Search name or message..." className="pl-9 bg-slate-50"/>
              </div>
              <div className="flex gap-2">
                 <select className="flex-1 text-xs border-slate-200 rounded-md py-1.5 px-2 bg-white" value={filter} onChange={(e) => setFilter(e.target.value)}>

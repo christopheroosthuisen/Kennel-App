@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Camera, Send, Smile, Frown, Meh, Utensils, CheckCircle, FileText, Plus, 
@@ -6,7 +5,7 @@ import {
   ChevronRight, Filter, CheckSquare, Wand2, Calendar, GripVertical, 
   MoreHorizontal, PlayCircle, Image as ImageIcon, Trash2, MessageCircle
 } from 'lucide-react';
-import { Card, Button, Badge, Input, cn, Modal, Label, Select, Textarea, Tabs, Switch, BulkActionBar } from './Common';
+import { Card, Button, Badge, Input, cn, Modal, Label, Select, Textarea, Tabs, Switch, BulkActionBar, SearchInput } from './Common';
 import { ReportCard } from '../types';
 import { useData } from './DataContext';
 
@@ -93,8 +92,7 @@ export const ReportCards = () => {
           </div>
 
           <div className="relative">
-            <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-            <Input 
+            <SearchInput 
               placeholder="Search pets..." 
               className="pl-9 h-9 text-sm"
               value={searchTerm}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Label, Select, Textarea, Badge, Switch, cn, Tabs } from './Common';
 import { MOCK_SERVICE_CONFIGS, MOCK_UNITS, MOCK_VET_CLINICS } from '../constants';
@@ -795,6 +794,98 @@ export const EditReservationModal = ({ isOpen, onClose, id }: BaseModalProps) =>
              <Button onClick={handleSave} className="gap-2"><Check size={16}/> Save Changes</Button>
            </div>
         </div>
+      </div>
+    </Modal>
+  );
+};
+
+export const NewReservationModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  const { owners, pets, addReservation } = useData();
+  const [step, setStep] = useState(1);
+  const [selectedOwner, setSelectedOwner] = useState('');
+  const [selectedPet, setSelectedPet] = useState('');
+  const [dates, setDates] = useState({ checkIn: '', checkOut: '' });
+  const [lodging, setLodging] = useState('');
+  const [services, setServices] = useState<string[]>([]);
+
+  const nextStep = () => setStep(s => s + 1);
+  const prevStep = () => setStep(s => s - 1);
+
+  const handleConfirm = () => {
+    addReservation({
+      id: `r${Date.now()}`,
+      petId: selectedPet,
+      ownerId: selectedOwner,
+      type: ServiceType.Boarding,
+      status: ReservationStatus.Confirmed,
+      checkIn: dates.checkIn,
+      checkOut: dates.checkOut,
+      lodging,
+      services,
+      price: 0 // Calc logic skipped for brevity
+    });
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="New Reservation" size="lg">
+      <div className="mb-6">
+        {/* Stepper UI ... */}
+        <div className="flex items-center justify-between mb-2">
+          {['Owner', 'Pet', 'Lodging', 'Services', 'Review'].map((label, i) => (
+            <div key={label} className={cn("flex flex-col items-center gap-2 relative z-10", step > i + 1 ? "text-primary-600" : step === i + 1 ? "text-primary-700 font-bold" : "text-slate-400")}>
+              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors", step > i + 1 ? "bg-primary-600 text-white" : step === i + 1 ? "bg-primary-600 text-white ring-4 ring-primary-100" : "bg-slate-100 text-slate-500")}>{step > i + 1 ? <Check size={16} /> : i + 1}</div>
+              <span className="text-xs">{label}</span>
+            </div>
+          ))}
+          <div className="absolute left-0 right-0 top-9 h-0.5 bg-slate-100 -z-0 mx-10" />
+        </div>
+      </div>
+
+      <div className="min-h-[300px]">
+        {step === 1 && (
+          <div className="space-y-4">
+            <Label>Select Owner</Label>
+            <Select onChange={(e) => setSelectedOwner(e.target.value)} value={selectedOwner}>
+              <option value="">-- Choose Owner --</option>
+              {owners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </Select>
+            <div className="flex justify-end mt-4"><Button onClick={nextStep} disabled={!selectedOwner}>Next</Button></div>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="space-y-4">
+            <Label>Select Pet</Label>
+            <Select onChange={(e) => setSelectedPet(e.target.value)} value={selectedPet}>
+              <option value="">-- Choose Pet --</option>
+              {pets.filter(p => p.ownerId === selectedOwner).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+            <div className="flex justify-between mt-4"><Button variant="ghost" onClick={prevStep}>Back</Button><Button onClick={nextStep} disabled={!selectedPet}>Next</Button></div>
+          </div>
+        )}
+        {step === 3 && (
+          <div className="space-y-4">
+             <div className="grid grid-cols-2 gap-4">
+               <div><Label>Check In</Label><Input type="datetime-local" onChange={e => setDates({...dates, checkIn: e.target.value})} /></div>
+               <div><Label>Check Out</Label><Input type="datetime-local" onChange={e => setDates({...dates, checkOut: e.target.value})} /></div>
+             </div>
+             <LodgingManager checkIn={dates.checkIn} checkOut={dates.checkOut} currentLodging={lodging} onChange={setLodging} />
+             <div className="flex justify-between mt-4"><Button variant="ghost" onClick={prevStep}>Back</Button><Button onClick={nextStep}>Next</Button></div>
+          </div>
+        )}
+        {step === 4 && (
+           <div className="space-y-4">
+              <ServiceManager selectedServices={services} onChange={setServices} />
+              <div className="flex justify-between mt-4"><Button variant="ghost" onClick={prevStep}>Back</Button><Button onClick={nextStep}>Next</Button></div>
+           </div>
+        )}
+        {step === 5 && (
+           <div className="space-y-4 text-center">
+              <h3 className="text-xl font-bold text-slate-800">Ready to Book!</h3>
+              <p className="text-slate-500">Confirm details for {pets.find(p=>p.id===selectedPet)?.name}</p>
+              <div className="flex justify-between mt-8"><Button variant="ghost" onClick={prevStep}>Back</Button><Button onClick={handleConfirm} className="bg-green-600 hover:bg-green-700">Confirm Booking</Button></div>
+           </div>
+        )}
       </div>
     </Modal>
   );

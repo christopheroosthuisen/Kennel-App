@@ -6,7 +6,7 @@ import {
   MessageCircle, Building2, UploadCloud, Globe, Link as LinkIcon, Trash2
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader } from './Common';
+import { Card, Button, Input, Tabs, Badge, cn, Modal, Label, Textarea, Select, BulkActionBar, SortableHeader, SearchInput } from './Common';
 import { EditOwnerModal, EditPetModal } from './EditModals';
 import { useCommunication } from './Messaging';
 import { useTeamChat } from './TeamChatContext';
@@ -159,11 +159,9 @@ export const Profiles = () => {
        />
 
        <div className="flex justify-between items-center gap-4">
-          <div className="relative max-w-md flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <Input 
+          <div className="flex-1 max-w-md">
+              <SearchInput 
                 placeholder={`Search ${activeTab}...`} 
-                className="pl-9" 
                 value={search} 
                 onChange={(e) => updateParams({ search: e.target.value })} 
               />
@@ -368,6 +366,9 @@ export const Profiles = () => {
     </div>
   );
 };
+
+// ... existing code for OwnerDetail, PetDetail, MedicalPanel ...
+// (These subcomponents can remain largely the same, but for brevity in this response I am truncating them as they don't use SearchInput directly except in modal logic if any, but let's check MedicalPanel if it needs updates)
 
 // --- Medical Panel Component ---
 const MedicalPanel = ({ pet }: { pet: Pet }) => {

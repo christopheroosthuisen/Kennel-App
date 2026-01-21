@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BarChart, DollarSign, TrendingUp, Users, Plus, FileText, 
@@ -7,7 +6,7 @@ import {
   Activity, AlertCircle, CheckCircle, Clock, Search, X, Table,
   ChevronLeft, Megaphone, Printer, Mail
 } from 'lucide-react';
-import { Card, Select, cn, Button, Modal, Label, Input, Badge, BulkActionBar } from './Common';
+import { Card, Select, cn, Button, Modal, Label, Input, Badge, BulkActionBar, SearchInput } from './Common';
 import { ALL_REPORTS_CONFIG } from '../constants';
 import { ReportDefinition } from '../types';
 import { useSearchParams } from 'react-router-dom';
@@ -165,10 +164,9 @@ const ReportRunner = ({ reportId, onBack }: { reportId: string, onBack: () => vo
         </div>
         <div className="flex gap-2">
            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <input 
+              <SearchInput 
                  placeholder="Search results..." 
-                 className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-primary-500 outline-none w-48"
+                 className="pl-8 h-9 text-xs w-48"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -293,8 +291,7 @@ const ReportLibrary = ({ onSelectReport }: { onSelectReport: (id: string) => voi
          <div className="flex items-center justify-between">
             <div className="flex gap-2 items-center flex-1">
                <div className="relative w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                  <Input 
+                  <SearchInput 
                      placeholder="Search reports..." 
                      className="pl-9"
                      value={search}

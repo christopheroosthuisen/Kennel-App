@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
-import { Search, ShoppingCart, Trash2, CreditCard, User, Plus, Minus, ChevronRight, X } from 'lucide-react';
-import { Card, Button, Input, Badge, Select, cn, Modal, Label } from './Common';
+import { Search, ShoppingCart, Trash2, CreditCard, User, Plus, Minus, ChevronRight, X, CheckCircle, Receipt } from 'lucide-react';
+import { Card, Button, Input, Badge, Select, cn, Modal, Label, SearchInput } from './Common';
 import { useData } from './DataContext';
+import { useToast } from './ToastContext';
+import { Invoice } from '../types';
 
 const PRODUCTS = [
   { id: 1, name: 'Premium Kibble 5lb', price: 24.99, category: 'Retail', color: 'bg-orange-100 text-orange-800' },
@@ -14,12 +15,21 @@ const PRODUCTS = [
 ];
 
 export const POS = () => {
-  const { owners } = useData();
+  const { owners, addInvoice } = useData(); 
+  const { addToast } = useToast();
+  
   const [cart, setCart] = useState<{id: number, name: string, price: number, qty: number}[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedCustomer, setSelectedCustomer] = useState<{id: string, name: string} | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  
+  // New State for Product Search
+  const [productSearch, setProductSearch] = useState('');
+  
+  // Checkout Success State
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastInvoiceId, setLastInvoiceId] = useState('');
 
   const addToCart = (product: any) => {
     setCart(prev => {
@@ -45,6 +55,38 @@ export const POS = () => {
     }));
   };
 
+  const handleCheckout = () => {
+     if (cart.length === 0) return;
+
+     const invId = `inv-${Date.now()}`;
+     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+     const tax = subtotal * 0.08;
+     
+     // Mock Invoice Object matching types
+     const invoice: Invoice = {
+        id: invId,
+        ownerId: selectedCustomer?.id || 'guest',
+        date: new Date().toISOString(),
+        status: 'Paid',
+        total: subtotal + tax,
+        items: cart.map(i => ({
+           id: `item-${i.id}`,
+           description: i.name,
+           quantity: i.qty,
+           price: i.price
+        }))
+     };
+
+     // In a real app, dispatch this to DataContext
+     // addInvoice(invoice); 
+     
+     setLastInvoiceId(invId);
+     setShowReceipt(true);
+     setCart([]);
+     setSelectedCustomer(null);
+     addToast("Transaction Completed", "success");
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const tax = subtotal * 0.08;
   const total = subtotal + tax;
@@ -54,15 +96,25 @@ export const POS = () => {
     o.phone.includes(customerSearch)
   );
 
+  const filteredProducts = PRODUCTS.filter(p => {
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
+    const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="flex h-[calc(100vh-100px)] gap-6">
       {/* Left: Product Grid */}
       <div className="flex-1 flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-slate-900">Point of Sale</h1>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <Input placeholder="Search products..." className="pl-9" />
+          <div className="w-64">
+            <SearchInput 
+              placeholder="Search products..." 
+              className="pl-9" 
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+            />
           </div>
         </div>
         
@@ -81,7 +133,7 @@ export const POS = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto pb-4">
-          {PRODUCTS.filter(p => activeCategory === 'All' || p.category === activeCategory).map(product => (
+          {filteredProducts.map(product => (
             <Card 
               key={product.id} 
               className="p-4 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between h-32 active:scale-95 transition-transform"
@@ -94,6 +146,11 @@ export const POS = () => {
               <div className="text-lg font-bold text-slate-900">${product.price.toFixed(2)}</div>
             </Card>
           ))}
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full text-center py-10 text-slate-400">
+              No products found.
+            </div>
+          )}
         </div>
       </div>
 
@@ -147,7 +204,11 @@ export const POS = () => {
             <span>Total</span>
             <span>${total.toFixed(2)}</span>
           </div>
-          <Button className="w-full mt-4 h-12 text-lg gap-2 bg-green-600 hover:bg-green-700">
+          <Button 
+            className="w-full mt-4 h-12 text-lg gap-2 bg-green-600 hover:bg-green-700" 
+            onClick={handleCheckout}
+            disabled={cart.length === 0}
+         >
              <CreditCard size={20} /> Checkout
           </Button>
         </div>
@@ -156,16 +217,12 @@ export const POS = () => {
       {/* Customer Select Modal */}
       <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Select Customer" size="md">
          <div className="space-y-4">
-            <div className="relative">
-               <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-               <Input 
-                  placeholder="Search name or phone..." 
-                  className="pl-9" 
-                  autoFocus
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-               />
-            </div>
+            <SearchInput 
+               placeholder="Search name or phone..." 
+               autoFocus
+               value={customerSearch}
+               onChange={(e) => setCustomerSearch(e.target.value)}
+            />
             <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
                {filteredCustomers.length > 0 ? filteredCustomers.map(c => (
                   <div 
@@ -186,6 +243,23 @@ export const POS = () => {
             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                <Button variant="ghost" onClick={() => { setSelectedCustomer(null); setIsCustomerModalOpen(false); }}>Guest Checkout</Button>
                <Button onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
+            </div>
+         </div>
+      </Modal>
+
+      {/* Receipt Modal */}
+      <Modal isOpen={showReceipt} onClose={() => setShowReceipt(false)} title="Payment Successful" size="sm">
+         <div className="text-center space-y-4 py-4">
+            <div className="h-16 w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+               <CheckCircle size={32}/>
+            </div>
+            <div>
+               <h3 className="text-xl font-bold text-slate-900">Transaction Complete</h3>
+               <p className="text-slate-500 text-sm">Invoice #{lastInvoiceId}</p>
+            </div>
+            <div className="flex gap-2 justify-center pt-2">
+               <Button variant="outline" className="gap-2"><Receipt size={16}/> Print Receipt</Button>
+               <Button onClick={() => setShowReceipt(false)}>New Sale</Button>
             </div>
          </div>
       </Modal>
